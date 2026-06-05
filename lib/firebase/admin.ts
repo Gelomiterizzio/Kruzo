@@ -1,6 +1,6 @@
 import { initializeApp, getApps, getApp, cert, type App, type ServiceAccount } from 'firebase-admin/app'
 import { getAuth } from 'firebase-admin/auth'
-import { getFirestore } from 'firebase-admin/firestore'
+import { getFirestore, FieldValue } from 'firebase-admin/firestore'
 import { cookies } from 'next/headers'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -78,5 +78,21 @@ export async function getSessionUser(): Promise<SessionUser | null> {
     return { uid: decoded.uid, role }
   } catch {
     return null
+  }
+}
+
+/**
+ * Increments a business view counter from the server using the Admin SDK.
+ * The previous client-SDK call ran unauthenticated on the server and was
+ * rejected by Firestore rules, so views never counted. Admin writes bypass
+ * rules; failures are swallowed so a counter never blocks page rendering.
+ */
+export async function incrementBusinessView(businessId: string): Promise<void> {
+  try {
+    await adminDb().collection('businesses').doc(businessId).update({
+      viewCount: FieldValue.increment(1),
+    })
+  } catch {
+    /* non-fatal */
   }
 }

@@ -90,10 +90,6 @@ export async function updateBusiness(id: string, data: Partial<Business>) {
   await updateDoc(doc(db, 'businesses', id), { ...data, updatedAt: serverTimestamp() })
 }
 
-export async function incrementBusinessView(id: string) {
-  await updateDoc(doc(db, 'businesses', id), { viewCount: increment(1) })
-}
-
 // ─── POSTS ──────────────────────────────────────────────────────────────────
 
 export async function getPostsByBusiness(businessId: string, pageSize = 12, cursor?: DocumentSnapshot) {

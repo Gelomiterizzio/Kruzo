@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { getBusinessBySlug, incrementBusinessView } from '@/lib/firebase/firestore'
+import { getBusinessBySlug } from '@/lib/firebase/firestore'
+import { incrementBusinessView } from '@/lib/firebase/admin'
 import { BusinessProfile } from '@/components/business/BusinessProfile'
 
 // ── Next.js 16: params is now a Promise ──────────────────────────────────────
