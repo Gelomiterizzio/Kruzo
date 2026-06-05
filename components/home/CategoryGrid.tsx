@@ -1,6 +1,6 @@
 'use client'
 import Link from 'next/link'
-import { motion } from 'framer-motion'
+import { motion, type Variants } from 'framer-motion'
 
 const CATS = [
   { key: 'comida',        emoji: '🍕', label: 'Comida',        gradient: 'from-orange-500 to-red-500'     },
@@ -17,14 +17,14 @@ const CATS = [
   { key: 'carpinteria',   emoji: '🪑', label: 'Carpintería',   gradient: 'from-amber-600 to-yellow-600'   },
 ]
 
-const container = {
+const container: Variants = {
   hidden: {},
   show: {
     transition: { staggerChildren: 0.04, delayChildren: 0.05 },
   },
 }
 
-const item = {
+const item: Variants = {
   hidden: { opacity: 0, scale: 0.8, y: 14 },
   show: {
     opacity: 1, scale: 1, y: 0,

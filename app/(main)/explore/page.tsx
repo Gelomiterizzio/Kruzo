@@ -10,10 +10,11 @@ export const metadata: Metadata = {
   description: 'Descubre todos los negocios y emprendimientos de Santa Cruz de la Sierra.',
 }
 
-interface Props { searchParams: { filter?: string; cat?: string } }
+// Next.js 16: searchParams is now a Promise.
+interface Props { searchParams: Promise<{ filter?: string; cat?: string }> }
 
-export default function ExplorePage({ searchParams }: Props) {
-  const { filter, cat } = searchParams
+export default async function ExplorePage({ searchParams }: Props) {
+  const { filter, cat } = await searchParams
 
   return (
     <div className="container pt-24 pb-16 space-y-8">
