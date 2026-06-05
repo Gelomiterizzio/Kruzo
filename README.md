@@ -1,176 +1,65 @@
-# KRUZO — Tu Ciudad. Tu Mercado.
+# KRUZO
 
-> La plataforma comercial local de Santa Cruz de la Sierra, Bolivia.
+Plataforma digital para conectar negocios, emprendedores y consumidores en Santa Cruz de la Sierra, Bolivia.
 
-KRUZO conecta emprendedores y negocios locales con su comunidad, ofreciendo un directorio inteligente, marketplace y red social comercial.
+## Descripción
 
----
+KRUZO es una plataforma web desarrollada con Next.js y Firebase que busca centralizar la presencia digital de negocios locales mediante directorios comerciales, perfiles empresariales, publicaciones, reseñas y herramientas de descubrimiento.
 
-## 🚀 Stack tecnológico
+## Tecnologías
 
-| Categoría | Tecnología |
-|-----------|-----------|
-| Framework | Next.js 14 (App Router) |
-| Lenguaje | TypeScript |
-| Estilos | TailwindCSS + Shadcn/ui |
-| Animaciones | Framer Motion |
-| Backend | Firebase (Firestore + Auth + Storage) |
-| Búsqueda | Algolia |
-| Mapas | Leaflet.js + OpenStreetMap |
-| Deploy | Vercel |
-| Estado | Zustand |
-| Formularios | React Hook Form + Zod |
+* Next.js 14
+* TypeScript
+* TailwindCSS
+* Firebase Authentication
+* Firebase Firestore
+* Firebase Storage
+* Zustand
+* React Hook Form
+* Zod
+* Leaflet
+* Vercel
 
----
-
-## 📁 Estructura del proyecto
-
-```
-kruzo/
-├── app/                    # Next.js 14 App Router
-│   ├── (auth)/             # Páginas de autenticación
-│   ├── (main)/             # Páginas públicas principales
-│   ├── dashboard/          # Panel del emprendedor
-│   └── admin/              # Panel administrativo
-├── components/             # Componentes React
-│   ├── business/           # Negocio: cards, profile, form
-│   ├── home/               # Secciones del home
-│   ├── layout/             # Navbar, Footer, Sidebar
-│   ├── map/                # Mapa interactivo
-│   ├── post/               # Publicaciones: cards, form, grid
-│   ├── review/             # Reseñas y calificaciones
-│   ├── search/             # Búsqueda y filtros
-│   └── shared/             # Componentes reutilizables
-├── lib/
-│   ├── firebase/           # Configuración y servicios Firebase
-│   ├── hooks/              # Custom hooks
-│   ├── store/              # Estado global (Zustand)
-│   ├── types/              # TypeScript types
-│   └── utils/              # Utilidades
-├── providers/              # React context providers
-└── public/                 # Assets estáticos
-```
-
----
-
-## ⚡ Instalación y desarrollo
-
-### 1. Clonar y instalar dependencias
+## Instalación
 
 ```bash
-git clone https://github.com/tu-usuario/kruzo.git
-cd kruzo
+git clone https://github.com/Gelomiterizzio/Kruzo.git
+cd Kruzo
 npm install
-```
-
-### 2. Configurar variables de entorno
-
-```bash
-cp .env.example .env.local
-```
-
-Edita `.env.local` con tus credenciales:
-
-```env
-# Firebase — Crear proyecto en https://console.firebase.google.com
-NEXT_PUBLIC_FIREBASE_API_KEY=...
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=...
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=...
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=...
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=...
-NEXT_PUBLIC_FIREBASE_APP_ID=...
-
-# Google Maps — https://console.cloud.google.com
-NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=...
-
-# Algolia — https://algolia.com (opcional)
-NEXT_PUBLIC_ALGOLIA_APP_ID=...
-NEXT_PUBLIC_ALGOLIA_SEARCH_KEY=...
-```
-
-### 3. Configurar Firebase
-
-1. Crear proyecto en [Firebase Console](https://console.firebase.google.com)
-2. Habilitar **Firestore Database** (modo producción)
-3. Habilitar **Authentication** (Google + Email/Password)
-4. Habilitar **Storage**
-5. Desplegar reglas:
-
-```bash
-npm run firebase:deploy-rules
-```
-
-### 4. Ejecutar en desarrollo
-
-```bash
 npm run dev
 ```
 
-Abre [http://localhost:3000](http://localhost:3000)
+## Variables de entorno
 
----
+Crear un archivo `.env.local` y configurar las credenciales correspondientes de Firebase.
 
-## 🏗️ Configurar primer admin
+## Estado del proyecto
 
-1. Regístrate en la plataforma con Google o Email
-2. Copia tu UID de Firebase Auth Console
-3. En Firestore, edita `users/{tu-uid}` → `role: "admin"`
+Actualmente en desarrollo activo.
 
----
+### Funcionalidades implementadas
 
-## 🚀 Deploy en Vercel
+* Autenticación de usuarios
+* Directorio de negocios
+* Publicaciones
+* Sistema de reseñas
+* Panel de administración
+* Dashboard para emprendedores
+* Mapa interactivo
 
-```bash
-# Instalar Vercel CLI
-npm i -g vercel
+### Próximas funcionalidades
 
-# Deploy
-vercel --prod
-```
+* Aplicación Android nativa
+* Sistema avanzado de analíticas
+* Integración publicitaria
+* Recomendaciones inteligentes
+* Mejoras de rendimiento y escalabilidad
 
-O conecta el repositorio en [vercel.com](https://vercel.com) y configura las variables de entorno en el dashboard.
+## Autor
 
----
+Mauricio Cortez
 
-## 📱 Funcionalidades principales
+## Licencia
 
-### Para usuarios
-- 🔍 Búsqueda inteligente de negocios y productos
-- 🗺️ Mapa interactivo de negocios
-- ❤️ Sistema de favoritos
-- ⭐ Reseñas y calificaciones
-- 📱 Contacto directo por WhatsApp
+Proyecto privado.
 
-### Para emprendedores
-- 🏪 Perfil completo de negocio con galería
-- 📸 Publicaciones con fotos, precio y stock
-- 📊 Panel de estadísticas
-- 🕐 Horarios de atención
-- 🚚 Opción de delivery
-
-### Para administradores
-- ✅ Aprobación y verificación de negocios
-- ⭐ Gestión de negocios destacados
-- 👥 Gestión de usuarios y roles
-- 📋 Moderación de contenido
-- 📈 Estadísticas generales
-
----
-
-## 🎨 Identidad visual
-
-- **Color primario:** `#ff4500` (Naranja fuego)
-- **Color oscuro:** `#0a0e1a` (Azul profundo)
-- **Color dorado:** `#fbbf24` (Premium)
-- **Font display:** Bricolage Grotesque
-- **Font body:** Inter
-
----
-
-## 📄 Licencia
-
-© 2025 KRUZO. Todos los derechos reservados.
-
----
-
-*Hecho con ❤️ en Santa Cruz de la Sierra, Bolivia 🇧🇴*
