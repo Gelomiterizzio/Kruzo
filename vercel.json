@@ -1,0 +1,36 @@
+{
+  "framework": "nextjs",
+  "buildCommand": "next build",
+  "devCommand": "next dev",
+  "installCommand": "npm install",
+  "regions": ["gru1"],
+  "env": {
+    "NEXT_PUBLIC_FIREBASE_API_KEY": "@kruzo-firebase-api-key",
+    "NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN": "@kruzo-firebase-auth-domain",
+    "NEXT_PUBLIC_FIREBASE_PROJECT_ID": "@kruzo-firebase-project-id",
+    "NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET": "@kruzo-firebase-storage-bucket",
+    "NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID": "@kruzo-firebase-messaging-sender-id",
+    "NEXT_PUBLIC_FIREBASE_APP_ID": "@kruzo-firebase-app-id",
+    "NEXT_PUBLIC_GOOGLE_MAPS_API_KEY": "@kruzo-google-maps-key",
+    "NEXT_PUBLIC_ALGOLIA_APP_ID": "@kruzo-algolia-app-id",
+    "NEXT_PUBLIC_ALGOLIA_SEARCH_KEY": "@kruzo-algolia-search-key"
+  },
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options", "value": "DENY" },
+        { "key": "X-XSS-Protection", "value": "1; mode=block" }
+      ]
+    },
+    {
+      "source": "/fonts/(.*)",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
+    },
+    {
+      "source": "/_next/static/(.*)",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
+    }
+  ]
+}
