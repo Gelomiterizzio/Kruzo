@@ -39,8 +39,8 @@ export function ReviewForm({ businessId, onSuccess }: Props) {
       reset()
       onSuccess?.()
     } catch (e: any) {
-      const msg = e?.code === 'permission-denied' ? 'Ya dejaste una reseña en este negocio' : 'Error al publicar reseña'
-      toast.error(msg)
+      const isDuplicate = e?.code === 'permission-denied' || e?.message === 'already-reviewed'
+      toast.error(isDuplicate ? 'Ya dejaste una reseña en este negocio' : 'Error al publicar reseña')
     } finally {
       setSubmitting(false)
     }

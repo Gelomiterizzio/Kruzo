@@ -28,4 +28,29 @@ export const getAnalyticsInstance = async () => {
   return supported ? getAnalytics(app) : null
 }
 
+// Firebase App Check — browser-only, opt-in.
+// No-op unless NEXT_PUBLIC_FIREBASE_APPCHECK_KEY (a reCAPTCHA v3 site key) is set,
+// so the app keeps working in dev / before App Check is provisioned. In non-prod
+// a debug token is enabled (register it in the Firebase console for local use).
+// Enforcement for Firestore must be turned on in the Firebase console.
+let appCheckStarted = false
+export async function initAppCheck() {
+  if (typeof window === 'undefined' || appCheckStarted) return
+  const key = process.env.NEXT_PUBLIC_FIREBASE_APPCHECK_KEY
+  if (!key) return
+  appCheckStarted = true
+  if (process.env.NODE_ENV !== 'production') {
+    ;(self as unknown as { FIREBASE_APPCHECK_DEBUG_TOKEN?: boolean }).FIREBASE_APPCHECK_DEBUG_TOKEN = true
+  }
+  try {
+    const { initializeAppCheck, ReCaptchaV3Provider } = await import('firebase/app-check')
+    initializeAppCheck(app, {
+      provider: new ReCaptchaV3Provider(key),
+      isTokenAutoRefreshEnabled: true,
+    })
+  } catch {
+    /* non-fatal: never block the app if App Check fails to initialize */
+  }
+}
+
 export default app

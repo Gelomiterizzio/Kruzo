@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useState } from 'react'
 import { type User } from 'firebase/auth'
 import { onAuthChange, syncSession, clearSession } from '@/lib/firebase/auth'
 import { getUserById } from '@/lib/firebase/firestore'
+import { initAppCheck } from '@/lib/firebase/config'
 import { useStore } from '@/lib/store/useStore'
 import type { AppUser } from '@/lib/types/user'
 
@@ -25,9 +26,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const setStoreUser = useStore((s) => s.setUser)
   const setFavorites = useStore((s) => s.setFavorites)
 
-  // Rehydrate Zustand persist store on client mount
+  // Rehydrate Zustand persist store + start App Check (no-op without a key) on client mount
   useEffect(() => {
     useStore.persist.rehydrate()
+    void initAppCheck()
   }, [])
 
   useEffect(() => {

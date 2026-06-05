@@ -6,7 +6,8 @@ const ADMIN_ONLY = ['/admin']
 const AUTH_ONLY  = ['/login', '/register', '/forgot-password']
 
 // Note: middleware uses `request.cookies` (synchronous), NOT `next/headers`.
-// No changes needed here for the Next.js 16 async-APIs migration.
+// Security headers (incl. CSP) are set in next.config.mjs so they also cover
+// statically-rendered pages, which a per-request middleware nonce cannot.
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
   const session  = request.cookies.get('kruzo-session')
