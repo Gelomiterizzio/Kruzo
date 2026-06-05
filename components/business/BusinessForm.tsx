@@ -11,23 +11,7 @@ import { useAuth } from '@/lib/hooks/useAuth'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
 import type { Business } from '@/lib/types/business'
-
-const CATEGORIES = [
-  { key: 'comida', label: '🍕 Comida' },
-  { key: 'reposteria', label: '🧁 Repostería' },
-  { key: 'tecnologia', label: '💻 Tecnología' },
-  { key: 'belleza', label: '💇 Belleza' },
-  { key: 'ropa', label: '👗 Ropa' },
-  { key: 'servicios', label: '🔧 Servicios' },
-  { key: 'fotografia', label: '📸 Fotografía' },
-  { key: 'automotriz', label: '🚗 Automotriz' },
-  { key: 'hogar', label: '🏠 Hogar' },
-  { key: 'educacion', label: '🎓 Educación' },
-  { key: 'electricistas', label: '⚡ Electricistas' },
-  { key: 'carpinteria', label: '🪑 Carpintería' },
-]
-
-const ZONES = ['Centro', 'Norte', 'Sur', 'Este', 'Oeste', 'Equipetrol', 'Plan 3000', 'La Guardia', 'Warnes', 'Cotoca', 'Montero', 'Otros']
+import { BUSINESS_CATEGORIES, SCZ_ZONES } from '@/lib/utils/constants'
 
 interface Props { existing?: Business }
 
@@ -132,10 +116,10 @@ export function BusinessForm({ existing }: Props) {
         <h2 className="font-semibold">Categorías <span className="text-muted-foreground text-sm font-normal">(máx. 3)</span></h2>
         {errors.category && <p className="text-xs text-destructive">{errors.category.message as string}</p>}
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-          {CATEGORIES.map(cat => (
+          {BUSINESS_CATEGORIES.map(cat => (
             <button type="button" key={cat.key} onClick={() => toggleCategory(cat.key)}
               className={`px-3 py-2 rounded-xl text-sm border transition-all text-left ${selectedCats.includes(cat.key) ? 'bg-primary/10 border-primary text-primary font-medium' : 'border-border hover:bg-accent'}`}>
-              {cat.label}
+              {cat.emoji} {cat.label}
             </button>
           ))}
         </div>
@@ -179,7 +163,7 @@ export function BusinessForm({ existing }: Props) {
           <Field label="Zona *" error={errors.zone?.message}>
             <select {...register('zone')} className={inputCls}>
               <option value="">Seleccionar zona…</option>
-              {ZONES.map(z => <option key={z} value={z}>{z}</option>)}
+              {SCZ_ZONES.map(z => <option key={z} value={z}>{z}</option>)}
             </select>
           </Field>
           <Field label="Dirección *" error={errors.address?.message}>

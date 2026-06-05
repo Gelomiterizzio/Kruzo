@@ -32,6 +32,11 @@ export function slugify(text: string): string {
     .replace(/(^-|-$)/g, '')
 }
 
+/** Slug with a short random suffix for uniqueness (e.g. business slugs). */
+export function uniqueSlug(text: string): string {
+  return slugify(text) + '-' + Math.random().toString(36).slice(2, 6)
+}
+
 export function truncate(text: string, maxLen: number): string {
   if (text.length <= maxLen) return text
   return text.slice(0, maxLen).trim() + '…'

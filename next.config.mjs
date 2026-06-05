@@ -34,7 +34,7 @@ const nextConfig = {
   },
 
   // Stable in Next.js 16 (moved out of experimental)
-  optimizePackageImports: ['lucide-react', 'framer-motion', '@radix-ui/react-dialog'],
+  optimizePackageImports: ['lucide-react', 'framer-motion'],
 
   async headers() {
     return [
