@@ -160,7 +160,12 @@ export async function createReview(
     const biz = await tx.get(bizRef)
     if (!biz.exists()) throw new Error('Business not found')
 
-    const reviewRef = doc(collection(db, 'businesses', businessId, 'reviews'))
+    // One review per user per business: the review doc id IS the user id, so a
+    // second review can't be created, and we double-check to avoid re-counting.
+    const reviewRef = doc(db, 'businesses', businessId, 'reviews', userId)
+    const existing = await tx.get(reviewRef)
+    if (existing.exists()) throw new Error('already-reviewed')
+
     tx.set(reviewRef, {
       businessId, userId, userName, userPhoto,
       rating: data.rating, comment: data.comment, images: [],

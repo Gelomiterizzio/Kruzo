@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { MapPin, Loader2 } from 'lucide-react'
 import type { Business } from '@/lib/types/business'
+import { escapeHtml } from '@/lib/utils/formatters'
 
 interface Props {
   businesses?: Business[]
@@ -70,7 +71,7 @@ export function BusinessMap({ businesses = [], center, zoom = 13, single, height
         if (single?.coordinates) {
           L.marker([single.coordinates.lat, single.coordinates.lng], { icon: customIcon('🏪') })
             .addTo(map)
-            .bindPopup(`<div style="min-width:140px"><strong style="font-size:14px">${single.name}</strong><p style="font-size:12px;color:#666;margin:4px 0 0">${single.address ?? ''}</p></div>`)
+            .bindPopup(`<div style="min-width:140px"><strong style="font-size:14px">${escapeHtml(single.name)}</strong><p style="font-size:12px;color:#666;margin:4px 0 0">${escapeHtml(single.address ?? '')}</p></div>`)
             .openPopup()
         }
 
@@ -79,10 +80,10 @@ export function BusinessMap({ businesses = [], center, zoom = 13, single, height
             .addTo(map)
             .bindPopup(`
               <div style="min-width:160px;font-family:system-ui">
-                <strong style="font-size:14px">${b.name}</strong>
-                <p style="font-size:12px;color:#666;margin:4px 0">📍 ${b.address ?? b.zone}</p>
+                <strong style="font-size:14px">${escapeHtml(b.name)}</strong>
+                <p style="font-size:12px;color:#666;margin:4px 0">📍 ${escapeHtml(b.address ?? b.zone)}</p>
                 <p style="font-size:12px;margin:0">⭐ ${b.rating.toFixed(1)} · ${b.reviewCount} reseñas</p>
-                <a href="/business/${b.slug}" style="display:block;margin-top:8px;padding:5px 10px;background:#ff4500;color:#fff;border-radius:8px;text-align:center;text-decoration:none;font-size:12px;font-weight:600">Ver perfil →</a>
+                <a href="/business/${encodeURIComponent(b.slug)}" style="display:block;margin-top:8px;padding:5px 10px;background:#ff4500;color:#fff;border-radius:8px;text-align:center;text-decoration:none;font-size:12px;font-weight:600">Ver perfil →</a>
               </div>
             `)
         })

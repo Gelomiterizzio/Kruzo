@@ -37,6 +37,20 @@ export function uniqueSlug(text: string): string {
   return slugify(text) + '-' + Math.random().toString(36).slice(2, 6)
 }
 
+/**
+ * HTML-escapes a value before it is interpolated into a raw HTML string.
+ * Used for Leaflet popups/markers, which are built as HTML strings (not React),
+ * so user-provided text must be escaped to prevent stored XSS.
+ */
+export function escapeHtml(value: unknown): string {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
 export function truncate(text: string, maxLen: number): string {
   if (text.length <= maxLen) return text
   return text.slice(0, maxLen).trim() + '…'
