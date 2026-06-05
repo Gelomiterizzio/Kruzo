@@ -2,8 +2,8 @@
 import { useRouter, useSearchParams } from 'next/navigation'
 import { SlidersHorizontal } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
+import { SCZ_ZONES } from '@/lib/utils/constants'
 
-const ZONES = ['Equipetrol','Plan 3000','Norte','Sur','Este','Oeste','Centro','La Guardia','Warnes','Cotoca']
 const SORTS = [
   { value: 'recent', label: 'Más recientes' },
   { value: 'rating', label: 'Mejor calificados' },
@@ -58,7 +58,7 @@ export function SearchFilters() {
       </FilterGroup>
 
       <FilterGroup title="Zona">
-        {ZONES.map(z => <FilterBtn key={z} k="zone" v={z} label={z} />)}
+        {SCZ_ZONES.map(z => <FilterBtn key={z} k="zone" v={z} label={z} />)}
       </FilterGroup>
 
       {(params.toString()) && (

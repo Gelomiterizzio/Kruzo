@@ -9,16 +9,9 @@ import type { Business, BusinessFormData } from '@/lib/types/business'
 import type { Post, PostFormData } from '@/lib/types/post'
 import type { Review, ReviewFormData } from '@/lib/types/review'
 import type { AppUser } from '@/lib/types/user'
+import { uniqueSlug } from '@/lib/utils/formatters'
 
 // ─── HELPERS ────────────────────────────────────────────────────────────────
-
-function slugify(text: string): string {
-  return text.toLowerCase().normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)/g, '')
-    + '-' + Math.random().toString(36).slice(2, 6)
-}
 
 // ─── USERS ──────────────────────────────────────────────────────────────────
 
@@ -70,7 +63,7 @@ export async function getBusinesses(opts: {
 }
 
 export async function createBusiness(ownerId: string, ownerName: string, data: BusinessFormData): Promise<string> {
-  const slug = slugify(data.name)
+  const slug = uniqueSlug(data.name)
   const ref = await addDoc(collection(db, 'businesses'), {
     ...data,
     slug, ownerId, ownerName,

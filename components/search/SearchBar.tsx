@@ -3,7 +3,6 @@ import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Search, X, TrendingUp } from 'lucide-react'
-import { useDebouncedCallback } from 'use-debounce'
 import { cn } from '@/lib/utils/cn'
 
 const POPULAR = ['Repostería', 'Electricistas', 'Fotografía', 'Comida delivery', 'Carpintería']
