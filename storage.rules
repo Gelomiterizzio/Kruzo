@@ -1,0 +1,30 @@
+rules_version = '2';
+
+// Firebase Storage security rules for KRUZO.
+// Storage rules cannot read Firestore, so ownership is enforced at the app
+// layer; here we ensure only signed-in users can upload, only images, and only
+// under a sane size limit (matches the 5MB client limit). Everything not
+// explicitly matched is denied by default.
+service firebase.storage {
+  match /b/{bucket}/o {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    function isImageUnder5MB() {
+      return request.resource.contentType.matches('image/.*')
+        && request.resource.size < 5 * 1024 * 1024;
+    }
+
+    // Business media: logo / cover / gallery  (businesses/{id}/{type}/...)
+    match /businesses/{businessId}/{allPaths=**} {
+      allow read: if true;
+      allow write: if isSignedIn() && isImageUnder5MB();
+    }
+
+    // Post media  (posts/{id}/...)
+    match /posts/{postId}/{allPaths=**} {
+      allow read: if true;
+      allow write: if isSignedIn() && isImageUnder5MB();
+    }
+  }
+}
