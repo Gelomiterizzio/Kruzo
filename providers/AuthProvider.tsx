@@ -1,7 +1,7 @@
 'use client'
 import { createContext, useContext, useEffect, useState } from 'react'
 import { type User } from 'firebase/auth'
-import { onAuthChange } from '@/lib/firebase/auth'
+import { onAuthChange, syncSession, clearSession } from '@/lib/firebase/auth'
 import { getUserById } from '@/lib/firebase/firestore'
 import { useStore } from '@/lib/store/useStore'
 import type { AppUser } from '@/lib/types/user'
@@ -34,6 +34,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const unsub = onAuthChange(async (fbUser) => {
       setFirebaseUser(fbUser)
       if (fbUser) {
+        // Keep the server session cookie in sync with the client session
+        // (covers expired/missing cookie while the client is still signed in).
+        void syncSession(fbUser)
         try {
           const u = await getUserById(fbUser.uid)
           setAppUser(u)
@@ -44,6 +47,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setStoreUser(null)
         }
       } else {
+        void clearSession()
         setAppUser(null)
         setStoreUser(null)
         setFavorites([])

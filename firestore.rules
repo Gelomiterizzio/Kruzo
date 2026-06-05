@@ -6,6 +6,16 @@ service cloud.firestore {
     function isAdmin() { return isAuth() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'; }
     function isEntrepreneur() { return isAuth() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['entrepreneur','admin']; }
 
+    // True when the update touches ONLY favoriteCount and moves it by exactly ±1.
+    // Lets any signed-in user (un)favorite a business without granting write
+    // access to the rest of the document.
+    function isFavoriteCountDelta(r) {
+      return isAuth()
+        && request.resource.data.diff(r.data).affectedKeys().hasOnly(['favoriteCount'])
+        && (request.resource.data.favoriteCount == r.data.favoriteCount + 1
+            || request.resource.data.favoriteCount == r.data.favoriteCount - 1);
+    }
+
     match /users/{uid} {
       allow read: if true;
       allow create: if isAuth() && request.auth.uid == uid;
@@ -18,7 +28,8 @@ service cloud.firestore {
     match /businesses/{bid} {
       allow read: if true;
       allow create: if isAuth() && isEntrepreneur() && request.resource.data.ownerId == request.auth.uid;
-      allow update, delete: if isOwner(resource) || isAdmin();
+      allow update: if isOwner(resource) || isAdmin() || isFavoriteCountDelta(resource);
+      allow delete: if isOwner(resource) || isAdmin();
       match /reviews/{rid} {
         allow read: if true;
         allow create: if isAuth() && request.resource.data.userId == request.auth.uid && request.resource.data.rating >= 1 && request.resource.data.rating <= 5;
