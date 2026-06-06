@@ -20,6 +20,8 @@ export interface Business {
   coordinates: { lat: number; lng: number } | null; mapUrl: string
   hours: BusinessSchedule; isOpenNow?: boolean
   rating: number; reviewCount: number; viewCount: number
+  // Per-star review counts, maintained by the onReviewWritten Cloud Function.
+  ratingDistribution?: { [star: string]: number }
   favoriteCount: number; shareCount: number; contactCount: number
   status: BusinessStatus; isVerified: boolean; isFeatured: boolean
   featuredUntil: Timestamp | null; plan: BusinessPlan

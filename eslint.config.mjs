@@ -32,6 +32,7 @@ const config = [
       'out/**',
       'build/**',
       'node_modules/**',
+      'functions/**',
       'turbopack-leaflet-empty.js',
     ],
   },

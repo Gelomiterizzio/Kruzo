@@ -1,8 +1,8 @@
 import {
   collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc,
-  query, where, orderBy, limit, startAfter, increment,
+  query, where, orderBy, limit, startAfter,
   serverTimestamp, type DocumentSnapshot, type QueryConstraint,
-  runTransaction, writeBatch, arrayUnion, arrayRemove, GeoPoint
+  runTransaction, arrayUnion, arrayRemove, GeoPoint
 } from 'firebase/firestore'
 import { db } from './config'
 import type { Business, BusinessFormData } from '@/lib/types/business'
@@ -155,17 +155,13 @@ export async function getReviews(businessId: string, pageSize = 10, cursor?: Doc
 export async function createReview(
   businessId: string, userId: string, userName: string, userPhoto: string, data: ReviewFormData
 ) {
+  // One review per user per business — the review id IS the user id. The client
+  // ONLY writes the review document; the `onReviewWritten` Cloud Function keeps
+  // the business's reviewCount, rating and ratingDistribution consistent.
+  const reviewRef = doc(db, 'businesses', businessId, 'reviews', userId)
   return await runTransaction(db, async tx => {
-    const bizRef = doc(db, 'businesses', businessId)
-    const biz = await tx.get(bizRef)
-    if (!biz.exists()) throw new Error('Business not found')
-
-    // One review per user per business: the review doc id IS the user id, so a
-    // second review can't be created, and we double-check to avoid re-counting.
-    const reviewRef = doc(db, 'businesses', businessId, 'reviews', userId)
     const existing = await tx.get(reviewRef)
     if (existing.exists()) throw new Error('already-reviewed')
-
     tx.set(reviewRef, {
       businessId, userId, userName, userPhoto,
       rating: data.rating, comment: data.comment, images: [],
@@ -173,12 +169,6 @@ export async function createReview(
       isVerified: false, reportCount: 0, isHidden: false,
       createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
     })
-
-    const prevCount = biz.data().reviewCount ?? 0
-    const prevRating = biz.data().rating ?? 0
-    const newCount = prevCount + 1
-    const newRating = ((prevRating * prevCount) + data.rating) / newCount
-    tx.update(bizRef, { reviewCount: newCount, rating: Math.round(newRating * 10) / 10 })
     return reviewRef.id
   })
 }
@@ -186,15 +176,9 @@ export async function createReview(
 // ─── FAVORITES ──────────────────────────────────────────────────────────────
 
 export async function toggleFavorite(userId: string, businessId: string, isFav: boolean) {
-  const batch = writeBatch(db)
-  const userRef = doc(db, 'users', userId)
-  const bizRef = doc(db, 'businesses', businessId)
-  if (isFav) {
-    batch.update(userRef, { favoriteIds: arrayRemove(businessId) })
-    batch.update(bizRef, { favoriteCount: increment(-1) })
-  } else {
-    batch.update(userRef, { favoriteIds: arrayUnion(businessId) })
-    batch.update(bizRef, { favoriteCount: increment(1) })
-  }
-  await batch.commit()
+  // The client only edits its OWN favoriteIds. The `onUserFavoritesWritten`
+  // Cloud Function keeps each business's favoriteCount in sync from the diff.
+  await updateDoc(doc(db, 'users', userId), {
+    favoriteIds: isFav ? arrayRemove(businessId) : arrayUnion(businessId),
+  })
 }
