@@ -6,28 +6,9 @@ service cloud.firestore {
     function isAdmin() { return isAuth() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'; }
     function isEntrepreneur() { return isAuth() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['entrepreneur','admin']; }
 
-    // True when the update touches ONLY favoriteCount and moves it by exactly ±1.
-    // Lets any signed-in user (un)favorite a business without granting write
-    // access to the rest of the document.
-    function isFavoriteCountDelta(r) {
-      return isAuth()
-        && request.resource.data.diff(r.data).affectedKeys().hasOnly(['favoriteCount'])
-        && (request.resource.data.favoriteCount == r.data.favoriteCount + 1
-            || request.resource.data.favoriteCount == r.data.favoriteCount - 1);
-    }
-
-    // Lets a signed-in user bump a business's review aggregates (reviewCount +1,
-    // rating within [0,5]) when posting a review, without granting write access
-    // to the rest of the document. Denormalised counters — for fully authoritative
-    // aggregation move this to a Cloud Function.
-    function isReviewAggregateUpdate(r) {
-      return isAuth()
-        && request.resource.data.diff(r.data).affectedKeys().hasOnly(['reviewCount', 'rating'])
-        && request.resource.data.reviewCount == r.data.reviewCount + 1
-        && request.resource.data.rating is number
-        && request.resource.data.rating >= 0
-        && request.resource.data.rating <= 5;
-    }
+    // Business aggregate counters (favoriteCount, reviewCount, rating,
+    // ratingDistribution) are maintained ONLY by Cloud Functions via the Admin
+    // SDK, which bypasses these rules. Clients can never write them.
 
     match /users/{uid} {
       allow read: if true;
@@ -41,8 +22,7 @@ service cloud.firestore {
     match /businesses/{bid} {
       allow read: if true;
       allow create: if isAuth() && isEntrepreneur() && request.resource.data.ownerId == request.auth.uid;
-      allow update: if isOwner(resource) || isAdmin() || isFavoriteCountDelta(resource) || isReviewAggregateUpdate(resource);
-      allow delete: if isOwner(resource) || isAdmin();
+      allow update, delete: if isOwner(resource) || isAdmin();
       match /reviews/{rid} {
         allow read: if true;
         // One review per user per business: the review id MUST equal the author's uid,

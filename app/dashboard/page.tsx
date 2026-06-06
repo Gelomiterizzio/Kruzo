@@ -1,31 +1,55 @@
 'use client'
+import { useQuery } from '@tanstack/react-query'
+import { collection, getCountFromServer, query, where } from 'firebase/firestore'
+import { db } from '@/lib/firebase/config'
+import { getBusinessById } from '@/lib/firebase/firestore'
 import { useAuth } from '@/lib/hooks/useAuth'
-import { useBusinesses } from '@/lib/hooks/useBusinesses'
-import { usePosts } from '@/lib/hooks/usePosts'
 import { formatNumber } from '@/lib/utils/formatters'
-import { Store, FileText, Star, Eye, TrendingUp, Plus, ArrowRight } from 'lucide-react'
+import { Store, FileText, Star, Eye, MessageSquare, TrendingUp, Plus, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
 
 export default function DashboardPage() {
   const { user } = useAuth()
+  const businessId = user?.businessIds?.[0]
+
+  // Real stats read straight from Firestore (the business doc is kept up to date
+  // by Cloud Functions). No simulated/placeholder values.
+  const { data: stats } = useQuery({
+    queryKey: ['dashboard-stats', businessId],
+    enabled: !!businessId,
+    queryFn: async () => {
+      const business = await getBusinessById(businessId!)
+      const postsSnap = await getCountFromServer(
+        query(collection(db, 'posts'), where('businessId', '==', businessId), where('status', '==', 'active')),
+      )
+      return {
+        views: business?.viewCount ?? 0,
+        rating: business?.rating ?? 0,
+        reviews: business?.reviewCount ?? 0,
+        posts: postsSnap.data().count,
+      }
+    },
+  })
+
+  const cards = [
+    { icon: Eye, label: 'Visitas', value: stats ? formatNumber(stats.views) : '—', color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-950' },
+    { icon: Star, label: 'Rating', value: stats && stats.reviews > 0 ? stats.rating.toFixed(1) : '—', color: 'text-gold-500', bg: 'bg-gold-50 dark:bg-yellow-950' },
+    { icon: MessageSquare, label: 'Reseñas', value: stats ? formatNumber(stats.reviews) : '—', color: 'text-primary', bg: 'bg-primary/5' },
+    { icon: FileText, label: 'Publicaciones', value: stats ? formatNumber(stats.posts) : '—', color: 'text-green-500', bg: 'bg-green-50 dark:bg-green-950' },
+  ]
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-display font-bold">
-          Buenos días, {user?.displayName?.split(' ')[0]} 👋
+          Hola, {user?.displayName?.split(' ')[0]} 👋
         </h1>
         <p className="text-muted-foreground text-sm mt-1">Aquí está el resumen de tu actividad</p>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {[
-          { icon: Eye,      label: 'Visitas hoy',   value: '—',  color: 'text-blue-500',   bg: 'bg-blue-50 dark:bg-blue-950' },
-          { icon: Star,     label: 'Rating',        value: '—',  color: 'text-gold-500',   bg: 'bg-gold-50 dark:bg-yellow-950' },
-          { icon: FileText, label: 'Publicaciones', value: '—',  color: 'text-green-500',  bg: 'bg-green-50 dark:bg-green-950' },
-          { icon: TrendingUp, label: 'Contactos',   value: '—',  color: 'text-primary',    bg: 'bg-primary/5' },
-        ].map(({ icon: Icon, label, value, color, bg }) => (
+        {cards.map(({ icon: Icon, label, value, color, bg }) => (
           <div key={label} className="p-4 bg-card border border-border rounded-2xl">
             <div className={`w-9 h-9 rounded-xl ${bg} flex items-center justify-center mb-3`}>
               <Icon size={18} className={color} />

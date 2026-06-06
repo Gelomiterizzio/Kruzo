@@ -164,7 +164,7 @@ export function BusinessProfile({ business }: { business: Business }) {
                   <div className="text-xs text-muted-foreground mt-1">{formatNumber(business.reviewCount)} reseñas</div>
                 </div>
                 <div className="flex-1 space-y-1.5">
-                  {[5,4,3,2,1].map(r => <RatingBar key={r} rating={r} count={Math.floor(business.reviewCount * ([0.5,0.25,0.15,0.07,0.03][5-r]))} total={business.reviewCount} />)}
+                  {[5,4,3,2,1].map(r => <RatingBar key={r} rating={r} count={business.ratingDistribution?.[r] ?? 0} total={business.reviewCount} />)}
                 </div>
               </div>
             </div>
