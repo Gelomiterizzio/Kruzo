@@ -4,6 +4,8 @@ import { TrendingUp } from 'lucide-react'
 import { BusinessGrid } from '@/components/business/BusinessGrid'
 import { PostGrid } from '@/components/post/PostGrid'
 import { GridSkeleton } from '@/components/shared/SkeletonCard'
+import { AdBannerInline } from '@/components/ads/AdBannerInline'
+import { AdBannerFooter } from '@/components/ads/AdBannerFooter'
 
 export const metadata: Metadata = {
   title: 'Tendencias | KRUZO',
@@ -28,12 +30,16 @@ export default function TrendingPage() {
         </Suspense>
       </div>
 
+      <AdBannerInline />
+
       <div>
         <h2 className="text-xl font-display font-bold mb-5">🔥 Productos populares</h2>
         <Suspense fallback={<GridSkeleton count={8} variant="post" />}>
           <PostGrid pageSize={12} />
         </Suspense>
       </div>
+
+      <AdBannerFooter />
     </div>
   )
 }

@@ -4,6 +4,7 @@ import { BusinessGrid } from '@/components/business/BusinessGrid'
 import { CategoryGrid } from '@/components/home/CategoryGrid'
 import { SearchBar } from '@/components/search/SearchBar'
 import { GridSkeleton } from '@/components/shared/SkeletonCard'
+import { AdBannerTop } from '@/components/ads/AdBannerTop'
 
 export const metadata: Metadata = {
   title: 'Explorar negocios | KRUZO',
@@ -24,6 +25,8 @@ export default async function ExplorePage({ searchParams }: Props) {
         <SearchBar className="max-w-xl mx-auto" />
       </div>
 
+      <AdBannerTop />
+
       <CategoryGrid />
 
       <div>
@@ -35,6 +38,7 @@ export default async function ExplorePage({ searchParams }: Props) {
             featured={filter === 'featured' ? true : undefined}
             category={cat}
             pageSize={12}
+            inFeedAd
           />
         </Suspense>
       </div>

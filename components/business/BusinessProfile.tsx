@@ -7,6 +7,7 @@ import {
   Heart, Share2, Star, Eye, MessageCircle, ChevronRight, Truck, CreditCard
 } from 'lucide-react'
 import { WhatsAppButton } from '@/components/shared/WhatsAppButton'
+import { AdBannerInline } from '@/components/ads/AdBannerInline'
 import { CategoryBadge } from '@/components/shared/CategoryBadge'
 import { StarRating, RatingBar } from '@/components/review/StarRating'
 import { ReviewCard } from '@/components/review/ReviewCard'
@@ -224,6 +225,8 @@ export function BusinessProfile({ business }: { business: Business }) {
           </div>
         )}
       </div>
+
+      <AdBannerInline />
     </div>
   )
 }

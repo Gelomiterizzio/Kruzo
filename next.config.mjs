@@ -8,18 +8,63 @@
 // to exactly what the app talks to (Firebase/Google APIs, OSM tiles, Leaflet).
 const isProd = process.env.NODE_ENV === 'production'
 
+// AdSense CSP allowances — only added when a publisher id is configured, so the
+// policy stays locked down whenever ads are switched off. Covers the loader,
+// ad iframes/fenced-frames, creative images and the ad-quality beacons.
+const adsEnabled = !!process.env.NEXT_PUBLIC_ADSENSE_CLIENT
+const ads = adsEnabled
+  ? {
+      script: [
+        'https://pagead2.googlesyndication.com',
+        'https://*.googlesyndication.com',
+        'https://partner.googleadservices.com',
+        'https://tpc.googlesyndication.com',
+        'https://www.googletagservices.com',
+        'https://adservice.google.com',
+        'https://*.adtrafficquality.google',
+      ],
+      frame: [
+        'https://googleads.g.doubleclick.net',
+        'https://tpc.googlesyndication.com',
+        'https://*.googlesyndication.com',
+        'https://*.doubleclick.net',
+        'https://*.adtrafficquality.google',
+      ],
+      img: [
+        'https://*.googlesyndication.com',
+        'https://*.g.doubleclick.net',
+        'https://*.google.com',
+        'https://*.adtrafficquality.google',
+      ],
+      connect: [
+        'https://pagead2.googlesyndication.com',
+        'https://*.googlesyndication.com',
+        'https://*.google.com',
+        'https://*.doubleclick.net',
+        'https://*.g.doubleclick.net',
+        'https://*.adtrafficquality.google',
+      ],
+    }
+  : { script: [], frame: [], img: [], connect: [] }
+
+const join = (...parts) => parts.flat().filter(Boolean).join(' ')
+
 const contentSecurityPolicy = [
   `default-src 'self'`,
   `base-uri 'self'`,
   `object-src 'none'`,
   `frame-ancestors 'none'`,
   `form-action 'self'`,
-  `script-src 'self' 'unsafe-inline'`,
+  join(`script-src 'self' 'unsafe-inline'`, ads.script),
   `style-src 'self' 'unsafe-inline' https://unpkg.com`,
-  `img-src 'self' data: blob: https://firebasestorage.googleapis.com https://lh3.googleusercontent.com https://images.unsplash.com https://avatars.githubusercontent.com https://*.tile.openstreetmap.org https://unpkg.com https://www.gstatic.com`,
+  join(
+    `img-src 'self' data: blob: https://firebasestorage.googleapis.com https://lh3.googleusercontent.com https://images.unsplash.com https://avatars.githubusercontent.com https://*.tile.openstreetmap.org https://unpkg.com https://www.gstatic.com`,
+    ads.img,
+  ),
   `font-src 'self' data:`,
-  `connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://*.gstatic.com https://www.google.com`,
-  `frame-src 'self' https://*.firebaseapp.com https://accounts.google.com https://www.google.com`,
+  join(`connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://*.gstatic.com https://www.google.com`, ads.connect),
+  join(`frame-src 'self' https://*.firebaseapp.com https://accounts.google.com https://www.google.com`, ads.frame),
+  ...(adsEnabled ? [join('fenced-frame-src', ads.frame)] : []),
   `worker-src 'self' blob:`,
   `manifest-src 'self'`,
   `upgrade-insecure-requests`,

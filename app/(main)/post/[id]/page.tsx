@@ -6,6 +6,7 @@ import type { Post } from '@/lib/types/post'
 import Image from 'next/image'
 import Link from 'next/link'
 import { WhatsAppButton } from '@/components/shared/WhatsAppButton'
+import { AdBannerInline } from '@/components/ads/AdBannerInline'
 import { formatPrice, formatRelativeTime } from '@/lib/utils/formatters'
 import { ArrowLeft, Tag, Truck } from 'lucide-react'
 
@@ -93,6 +94,8 @@ export default async function PostPage({ params }: Props) {
             </span>
           )}
         </div>
+
+        <AdBannerInline inArticle />
 
         <div className="p-4 bg-card border border-border rounded-2xl flex items-center gap-3">
           {post.businessLogo && (

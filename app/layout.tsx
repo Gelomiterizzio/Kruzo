@@ -4,6 +4,7 @@ import { ThemeProvider } from '@/providers/ThemeProvider'
 import { AuthProvider } from '@/providers/AuthProvider'
 import { QueryProvider } from '@/providers/QueryProvider'
 import { ServiceWorkerRegister } from '@/components/shared/ServiceWorkerRegister'
+import { AdSenseScript } from '@/components/ads/AdSenseScript'
 import { Toaster } from 'sonner'
 import './globals.css'
 
@@ -91,6 +92,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               />
               <ServiceWorkerRegister />
             </AuthProvider>
+            <AdSenseScript />
           </QueryProvider>
         </ThemeProvider>
       </body>

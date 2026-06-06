@@ -5,6 +5,7 @@ import { SearchFilters } from '@/components/search/SearchFilters'
 import { BusinessGrid } from '@/components/business/BusinessGrid'
 import { PostGrid } from '@/components/post/PostGrid'
 import { GridSkeleton } from '@/components/shared/SkeletonCard'
+import { AdBannerSidebar } from '@/components/ads/AdBannerSidebar'
 
 export const metadata: Metadata = {
   title: 'Buscar | KRUZO',
@@ -38,8 +39,11 @@ export default async function SearchPage({ searchParams }: Props) {
       <div className="flex gap-6">
         {/* Filters sidebar */}
         <aside className="hidden md:block w-52 shrink-0">
-          <div className="sticky top-24 p-4 bg-card border border-border rounded-2xl">
-            <SearchFilters />
+          <div className="sticky top-24 space-y-4">
+            <div className="p-4 bg-card border border-border rounded-2xl">
+              <SearchFilters />
+            </div>
+            {hasQuery && <AdBannerSidebar sticky={false} />}
           </div>
         </aside>
 
@@ -57,7 +61,7 @@ export default async function SearchPage({ searchParams }: Props) {
                 <div>
                   <h2 className="font-semibold mb-4">Negocios</h2>
                   <Suspense fallback={<GridSkeleton count={4} />}>
-                    <BusinessGrid category={cat} zone={zone} pageSize={12} />
+                    <BusinessGrid category={cat} zone={zone} pageSize={12} inFeedAd />
                   </Suspense>
                 </div>
               )}
