@@ -3,6 +3,7 @@ import { Syne, DM_Sans } from 'next/font/google'
 import { ThemeProvider } from '@/providers/ThemeProvider'
 import { AuthProvider } from '@/providers/AuthProvider'
 import { QueryProvider } from '@/providers/QueryProvider'
+import { ServiceWorkerRegister } from '@/components/shared/ServiceWorkerRegister'
 import { Toaster } from 'sonner'
 import './globals.css'
 
@@ -30,6 +31,7 @@ export const metadata: Metadata = {
   description:
     'Descubre negocios, emprendimientos y servicios de Santa Cruz de la Sierra, Bolivia. Conecta con tu comunidad local por WhatsApp.',
   keywords: ['Santa Cruz', 'Bolivia', 'negocios', 'emprendimientos', 'marketplace', 'servicios locales', 'KRUZO'],
+  applicationName: 'KRUZO',
   authors: [{ name: 'KRUZO', url: APP_URL }],
   creator: 'KRUZO',
   publisher: 'KRUZO',
@@ -40,19 +42,21 @@ export const metadata: Metadata = {
     siteName: 'KRUZO',
     title: 'KRUZO — Tu Ciudad. Tu Mercado.',
     description: 'Descubre negocios y emprendimientos de Santa Cruz de la Sierra.',
-    images: [{ url: '/og-default.svg', width: 1200, height: 630, alt: 'KRUZO' }],
+    images: [{ url: '/og-default.png', width: 1200, height: 630, alt: 'KRUZO — Tu Ciudad. Tu Mercado.', type: 'image/png' }],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'KRUZO — Tu Ciudad. Tu Mercado.',
     description: 'Descubre negocios locales en Santa Cruz de la Sierra, Bolivia.',
-    images: ['/og-default.svg'],
+    images: ['/og-default.png'],
   },
   robots: { index: true, follow: true, googleBot: { index: true, follow: true } },
   manifest: '/manifest.json',
+  appleWebApp: { capable: true, title: 'KRUZO', statusBarStyle: 'default' },
   icons: {
     icon: '/favicon.svg',
     shortcut: '/favicon.svg',
+    apple: '/icons/apple-touch-icon.png',
   },
 }
 
@@ -85,6 +89,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 closeButton
                 toastOptions={{ duration: 4000 }}
               />
+              <ServiceWorkerRegister />
             </AuthProvider>
           </QueryProvider>
         </ThemeProvider>
