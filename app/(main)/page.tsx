@@ -2,6 +2,8 @@ import type { Metadata } from 'next'
 import { HeroSection } from '@/components/home/HeroSection'
 import { CategoryGrid } from '@/components/home/CategoryGrid'
 import { FeaturedSection } from '@/components/home/FeaturedSection'
+import { AdBannerInline } from '@/components/ads/AdBannerInline'
+import { AdBannerFooter } from '@/components/ads/AdBannerFooter'
 
 export const metadata: Metadata = {
   title: 'KRUZO — Tu Ciudad. Tu Mercado.',
@@ -24,6 +26,11 @@ export default function HomePage() {
         category="comida"
         viewAllHref="/search?cat=comida"
       />
+
+      <div className="container">
+        <AdBannerInline />
+      </div>
+
       <FeaturedSection
         title="Servicios técnicos"
         category="servicios"
@@ -34,6 +41,10 @@ export default function HomePage() {
         category="tecnologia"
         viewAllHref="/search?cat=tecnologia"
       />
+
+      <div className="container pb-8">
+        <AdBannerFooter />
+      </div>
     </div>
   )
 }
