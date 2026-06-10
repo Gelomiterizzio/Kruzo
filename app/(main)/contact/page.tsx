@@ -1,8 +1,9 @@
 import type { Metadata } from 'next'
-import { Mail, MessageCircle, Instagram, MapPin } from 'lucide-react'
+import { Mail, Instagram, MapPin } from 'lucide-react'
+import { ContactForm } from '@/components/contact/ContactForm'
 
 export const metadata: Metadata = {
-  title: 'Contacto | KRUZO',
+  title: 'Contacto',
   description: 'Contáctanos para soporte, alianzas o información sobre KRUZO.',
 }
 
@@ -16,7 +17,6 @@ export default function ContactPage() {
 
       <div className="grid sm:grid-cols-2 gap-4">
         {[
-          { icon: MessageCircle, label: 'WhatsApp', value: '+591 70000000', href: 'https://wa.me/59170000000?text=Hola KRUZO!' },
           { icon: Mail, label: 'Email', value: 'hola@kruzo.bo', href: 'mailto:hola@kruzo.bo' },
           { icon: Instagram, label: 'Instagram', value: '@kruzo_scz', href: 'https://instagram.com/kruzo_scz' },
           { icon: MapPin, label: 'Ubicación', value: 'Santa Cruz de la Sierra, Bolivia', href: '' },
@@ -34,15 +34,7 @@ export default function ContactPage() {
         ))}
       </div>
 
-      <div className="p-6 bg-card border border-border rounded-2xl space-y-4">
-        <h2 className="font-semibold">Envíanos un mensaje</h2>
-        <input placeholder="Tu nombre" className="w-full px-3 py-2.5 text-sm bg-muted border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30" />
-        <input type="email" placeholder="tu@email.com" className="w-full px-3 py-2.5 text-sm bg-muted border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30" />
-        <textarea rows={4} placeholder="Tu mensaje…" className="w-full px-3 py-2.5 text-sm bg-muted border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none" />
-        <button className="w-full py-3 bg-primary text-white rounded-xl font-medium hover:bg-primary/90 transition-colors">
-          Enviar mensaje
-        </button>
-      </div>
+      <ContactForm />
     </div>
   )
 }

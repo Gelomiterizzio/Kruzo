@@ -18,7 +18,8 @@ export function StarRating({ value, onChange, size = 20, readonly = false, showL
   const active = hovered || value
 
   return (
-    <div className="flex items-center gap-1.5">
+    <div className="flex items-center gap-1.5" role={readonly ? 'img' : undefined}
+      aria-label={readonly ? `Calificación: ${value} de 5 estrellas` : undefined}>
       <div className="flex items-center gap-0.5">
         {[1, 2, 3, 4, 5].map(star => (
           <button key={star} type="button"
@@ -26,6 +27,8 @@ export function StarRating({ value, onChange, size = 20, readonly = false, showL
             onMouseEnter={() => !readonly && setHovered(star)}
             onMouseLeave={() => !readonly && setHovered(0)}
             disabled={readonly}
+            aria-label={readonly ? undefined : `Calificar con ${star} ${star === 1 ? 'estrella' : 'estrellas'}`}
+            aria-pressed={readonly ? undefined : star <= value}
             className={cn('transition-all', !readonly && 'hover:scale-110 cursor-pointer', readonly && 'cursor-default')}>
             <Star size={size} className={cn(
               'transition-colors',

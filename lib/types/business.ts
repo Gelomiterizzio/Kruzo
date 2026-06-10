@@ -1,4 +1,4 @@
-import type { GeoPoint, Timestamp } from 'firebase/firestore'
+import type { Timestamp } from 'firebase/firestore'
 
 export type BusinessPlan = 'free' | 'pro' | 'premium'
 export type BusinessStatus = 'active' | 'pending' | 'suspended' | 'rejected'

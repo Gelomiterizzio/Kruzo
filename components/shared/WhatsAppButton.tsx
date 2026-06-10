@@ -1,6 +1,6 @@
 'use client'
 import { MessageCircle } from 'lucide-react'
-import { buildWhatsAppURL, buildWhatsAppContactURL, buildWhatsAppPostURL } from '@/lib/utils/whatsapp'
+import { buildWhatsAppContactURL, buildWhatsAppPostURL } from '@/lib/utils/whatsapp'
 import { cn } from '@/lib/utils/cn'
 
 interface WAButtonProps {

@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
+import { useQuery } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Search, Bell, Heart, Menu, X, Plus, ChevronDown,
@@ -12,6 +13,7 @@ import { useStore } from '@/lib/store/useStore'
 import { ThemeToggle } from '@/components/shared/ThemeToggle'
 import { cn } from '@/lib/utils/cn'
 import { getInitials } from '@/lib/utils/formatters'
+import { getUnreadNotificationsCount } from '@/lib/firebase/firestore'
 
 const NAV_LINKS = [
   { href: '/explore',  label: 'Explorar' },
@@ -27,6 +29,15 @@ export function Navbar() {
   const [scrolled, setScrolled]       = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const [searchVal, setSearchVal]     = useState('')
+
+  // Real unread count — the bell only lights up when something is actually unread.
+  const { data: unreadCount = 0 } = useQuery({
+    queryKey: ['notifications-unread', user?.id],
+    enabled: !!user,
+    queryFn: () => getUnreadNotificationsCount(user!.id),
+    staleTime: 60_000,
+    refetchOnWindowFocus: true,
+  })
 
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 10)
@@ -142,10 +153,13 @@ export function Navbar() {
 
               <Link
                 href="/notifications"
+                aria-label={unreadCount > 0 ? `Notificaciones (${unreadCount} sin leer)` : 'Notificaciones'}
                 className={cn('p-2 rounded-xl transition-colors relative', pathname === '/notifications' ? 'bg-accent' : 'hover:bg-accent/70')}
               >
                 <Bell size={19} />
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-primary ring-2 ring-background" />
+                {unreadCount > 0 && (
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-primary ring-2 ring-background" />
+                )}
               </Link>
 
               {/* User dropdown */}
@@ -174,7 +188,7 @@ export function Navbar() {
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 6, scale: 0.96 }}
                       transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
-                      className="absolute right-0 mt-2 w-56 bg-card/98 backdrop-blur-xl border border-border/60 rounded-2xl shadow-warm-lg p-1.5 z-50"
+                      className="absolute right-0 mt-2 w-56 bg-card/95 backdrop-blur-xl border border-border/60 rounded-2xl shadow-warm-lg p-1.5 z-50"
                     >
                       <div className="px-3 py-2.5 border-b border-border/50 mb-1.5">
                         <p className="text-sm font-bold truncate">{user.displayName}</p>
@@ -248,7 +262,7 @@ export function Navbar() {
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-            className="border-t border-border/50 bg-background/98 backdrop-blur-xl lg:hidden overflow-hidden"
+            className="border-t border-border/50 bg-background/95 backdrop-blur-xl lg:hidden overflow-hidden"
           >
             <div className="container py-4 space-y-1">
               <form onSubmit={handleSearch} className="mb-3">
@@ -278,8 +292,16 @@ export function Navbar() {
               ))}
               {user ? (
                 <>
-                  <Link href="/favorites" className="block px-4 py-2.5 rounded-xl text-sm hover:bg-accent/70">❤️ Favoritos</Link>
-                  <Link href="/notifications" className="block px-4 py-2.5 rounded-xl text-sm hover:bg-accent/70">🔔 Notificaciones</Link>
+                  <Link href="/favorites" className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-sm hover:bg-accent/70">
+                    <Heart size={15} className="text-muted-foreground" /> Favoritos
+                  </Link>
+                  <Link href="/notifications" className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-sm hover:bg-accent/70">
+                    <span className="relative">
+                      <Bell size={15} className="text-muted-foreground" />
+                      {unreadCount > 0 && <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-primary" />}
+                    </span>
+                    Notificaciones
+                  </Link>
                   {(isEntrepreneur || isAdmin) && (
                     <Link href="/dashboard/posts/new" className="flex items-center gap-2 px-4 py-2.5 bg-primary text-white rounded-xl text-sm font-semibold">
                       <Plus size={15} /> Nueva publicación

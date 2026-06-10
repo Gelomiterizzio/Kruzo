@@ -96,3 +96,37 @@ export async function incrementBusinessView(businessId: string): Promise<void> {
     /* non-fatal */
   }
 }
+
+export interface PublicStats {
+  activeBusinesses: number
+  users: number
+}
+
+/**
+ * Real platform-wide counts for public marketing surfaces (home hero).
+ * Returns null when the Admin SDK isn't configured (e.g. CI builds) so the
+ * caller can degrade gracefully instead of showing invented numbers.
+ */
+export async function getPublicStats(): Promise<PublicStats | null> {
+  try {
+    const db = adminDb()
+    const [biz, users] = await Promise.all([
+      db.collection('businesses').where('status', '==', 'active').count().get(),
+      db.collection('users').count().get(),
+    ])
+    return { activeBusinesses: biz.data().count, users: users.data().count }
+  } catch {
+    return null
+  }
+}
+
+/** Same as above, for post detail views (feeds the owner's real analytics). */
+export async function incrementPostView(postId: string): Promise<void> {
+  try {
+    await adminDb().collection('posts').doc(postId).update({
+      viewCount: FieldValue.increment(1),
+    })
+  } catch {
+    /* non-fatal */
+  }
+}

@@ -1,5 +1,4 @@
 'use client'
-import { motion } from 'framer-motion'
 import { Star } from 'lucide-react'
 import { BusinessCard } from '@/components/business/BusinessCard'
 import { BusinessCardSkeleton } from '@/components/shared/SkeletonCard'
@@ -54,7 +53,7 @@ export function FeaturedSection({
       {/* ── Grid ── */}
       {loading ? (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
-          {[1, 2, 3, 4].map((i) => (
+          {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
             <BusinessCardSkeleton key={i} />
           ))}
         </div>
@@ -65,14 +64,8 @@ export function FeaturedSection({
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
           {businesses.map((b, i) => (
-            <motion.div
-              key={b.id}
-              initial={{ opacity: 0, y: 18 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.055, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-            >
-              <BusinessCard business={b} index={i} />
-            </motion.div>
+            // BusinessCard animates its own entrance — no extra wrapper animation.
+            <BusinessCard key={b.id} business={b} index={i} />
           ))}
         </div>
       )}

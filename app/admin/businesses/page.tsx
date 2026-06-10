@@ -3,9 +3,10 @@ import { useEffect, useState } from 'react'
 import { collection, query, orderBy, limit, getDocs, doc, updateDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase/config'
 import type { Business } from '@/lib/types/business'
-import { BadgeCheck, Clock, XCircle, Star, Eye, CheckCircle, Ban } from 'lucide-react'
+import { BadgeCheck, Star, Eye, CheckCircle, Ban } from 'lucide-react'
 import { toast } from 'sonner'
 import { formatRelativeTime } from '@/lib/utils/formatters'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 
 const STATUS_CFG = {
   active:    { label: 'Activo',     cls: 'bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-400' },
@@ -18,6 +19,7 @@ export default function AdminBusinessesPage() {
   const [businesses, setBusinesses] = useState<Business[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<string>('all')
+  const [toSuspend, setToSuspend] = useState<Business | null>(null)
 
   useEffect(() => {
     const load = async () => {
@@ -34,7 +36,7 @@ export default function AdminBusinessesPage() {
   const updateStatus = async (id: string, status: string) => {
     try {
       await updateDoc(doc(db, 'businesses', id), { status })
-      setBusinesses(prev => prev.map(b => b.id === id ? { ...b, status: status as any } : b))
+      setBusinesses(prev => prev.map(b => b.id === id ? { ...b, status: status as Business['status'] } : b))
       toast.success(`Negocio ${status === 'active' ? 'aprobado' : 'suspendido'}`)
     } catch { toast.error('Error al actualizar') }
   }
@@ -102,7 +104,7 @@ export default function AdminBusinessesPage() {
                     </button>
                   )}
                   {b.status === 'active' && (
-                    <button onClick={() => updateStatus(b.id, 'suspended')} className="p-1.5 rounded-lg bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-400 hover:bg-red-200 transition-colors" title="Suspender">
+                    <button onClick={() => setToSuspend(b)} className="p-1.5 rounded-lg bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-400 hover:bg-red-200 transition-colors" title="Suspender">
                       <Ban size={14} />
                     </button>
                   )}
@@ -121,6 +123,16 @@ export default function AdminBusinessesPage() {
           })}
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!toSuspend}
+        title="¿Suspender este negocio?"
+        description={toSuspend ? `"${toSuspend.name}" dejará de ser visible para los usuarios hasta que vuelva a aprobarse.` : ''}
+        confirmLabel="Suspender"
+        variant="danger"
+        onConfirm={() => { if (toSuspend) updateStatus(toSuspend.id, 'suspended'); setToSuspend(null) }}
+        onCancel={() => setToSuspend(null)}
+      />
     </div>
   )
 }

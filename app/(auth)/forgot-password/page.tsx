@@ -19,7 +19,8 @@ export default function ForgotPasswordPage() {
     const ok = await sendReset(email)
     setLoading(false)
     if (ok) setSent(true)
-    else setError('No se encontró una cuenta con ese email')
+    // Firebase no revela si el email existe; un fallo aquí es técnico.
+    else setError('No se pudo enviar el enlace. Verifica el email e intenta de nuevo.')
   }
 
   if (sent) return (
@@ -47,8 +48,9 @@ export default function ForgotPasswordPage() {
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && <div className="p-3 bg-destructive/10 text-destructive text-sm rounded-xl">{error}</div>}
         <div className="relative">
+          <label htmlFor="reset-email" className="sr-only">Email</label>
           <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
-          <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="tu@email.com"
+          <input id="reset-email" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="tu@email.com" autoComplete="email"
             className="w-full pl-9 pr-3 py-3 text-sm bg-muted border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" />
         </div>
         <button type="submit" disabled={loading}

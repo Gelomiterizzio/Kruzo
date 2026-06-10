@@ -17,9 +17,6 @@ interface KruzoState {
   addFavorite: (id: string) => void
   removeFavorite: (id: string) => void
   setFavorites: (ids: string[]) => void
-
-  unreadCount: number
-  setUnreadCount: (n: number) => void
 }
 
 export const useStore = create<KruzoState>()(
@@ -39,9 +36,6 @@ export const useStore = create<KruzoState>()(
       addFavorite: (id) => set((s) => ({ localFavorites: [...s.localFavorites, id] })),
       removeFavorite: (id) => set((s) => ({ localFavorites: s.localFavorites.filter((f) => f !== id) })),
       setFavorites: (ids) => set({ localFavorites: ids }),
-
-      unreadCount: 0,
-      setUnreadCount: (n) => set({ unreadCount: n }),
     }),
     {
       name: 'kruzo-store',

@@ -6,7 +6,7 @@ const BASE = (process.env.NEXT_PUBLIC_APP_URL ?? 'https://kruzo.bo').replace(/\/
 // Refresh hourly so newly approved businesses are picked up without a redeploy.
 export const revalidate = 3600
 
-const STATIC_ROUTES = ['', '/explore', '/search', '/trending', '/about', '/contact']
+const STATIC_ROUTES = ['', '/explore', '/search', '/trending', '/about', '/contact', '/terms', '/privacy']
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date()

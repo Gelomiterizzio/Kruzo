@@ -1,64 +1,108 @@
 'use client'
-import { BarChart3, Eye, MessageCircle, Heart, TrendingUp, Users } from 'lucide-react'
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts'
+import Link from 'next/link'
+import Image from 'next/image'
+import { useQuery } from '@tanstack/react-query'
+import { BarChart3, Eye, Heart, Star, MessageSquare, FileText, TrendingUp } from 'lucide-react'
+import { useAuth } from '@/lib/hooks/useAuth'
+import { getBusinessById, getPostsByBusiness } from '@/lib/firebase/firestore'
+import { formatNumber } from '@/lib/utils/formatters'
+import { EmptyState } from '@/components/shared/EmptyState'
 
-const MOCK_VIEWS = Array.from({ length: 14 }, (_, i) => ({
-  day: `${i + 1}`,
-  visitas: Math.floor(Math.random() * 80) + 20,
-  contactos: Math.floor(Math.random() * 15) + 2,
-}))
-
+// Every number on this page is real, read straight from Firestore documents
+// that Cloud Functions / server counters keep up to date. No simulated data.
 export default function AnalyticsPage() {
+  const { user } = useAuth()
+  const businessId = user?.businessIds?.[0]
+
+  const { data: business, isLoading: bizLoading } = useQuery({
+    queryKey: ['business', businessId],
+    queryFn: () => getBusinessById(businessId!),
+    enabled: !!businessId,
+  })
+
+  const { data: topPosts = [], isLoading: postsLoading } = useQuery({
+    queryKey: ['analytics-posts', businessId],
+    enabled: !!businessId,
+    queryFn: async () => {
+      const { posts } = await getPostsByBusiness(businessId!, 50)
+      return [...posts].sort((a, b) => b.viewCount - a.viewCount).slice(0, 8)
+    },
+  })
+
+  if (!businessId) {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-2xl font-display font-bold flex items-center gap-2"><BarChart3 size={22} /> Estadísticas</h1>
+        <EmptyState title="Primero crea tu negocio" description="Cuando tu negocio esté activo verás aquí sus visitas, guardados y reseñas reales."
+          icon="store" action={{ label: 'Crear negocio', href: '/dashboard/business' }} />
+      </div>
+    )
+  }
+
+  const cards = [
+    { icon: Eye,           label: 'Visitas al perfil', value: business ? formatNumber(business.viewCount) : '—',     color: 'text-blue-500',  bg: 'bg-blue-50 dark:bg-blue-950' },
+    { icon: Heart,         label: 'Guardados',         value: business ? formatNumber(business.favoriteCount) : '—', color: 'text-red-500',   bg: 'bg-red-50 dark:bg-red-950' },
+    { icon: MessageSquare, label: 'Reseñas',           value: business ? formatNumber(business.reviewCount) : '—',   color: 'text-primary',   bg: 'bg-primary/5' },
+    { icon: Star,          label: 'Calificación',      value: business && business.reviewCount > 0 ? business.rating.toFixed(1) : '—', color: 'text-gold-500', bg: 'bg-gold-50 dark:bg-yellow-950' },
+  ]
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-display font-bold flex items-center gap-2"><BarChart3 size={22} /> Estadísticas</h1>
-        <p className="text-muted-foreground text-sm mt-0.5">Actividad de los últimos 14 días</p>
+        <p className="text-muted-foreground text-sm mt-0.5">Datos reales y acumulados de tu negocio</p>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {[
-          { icon: Eye,           label: 'Visitas totales',  value: '1,248', change: '+12%', color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-950' },
-          { icon: MessageCircle, label: 'Contactos WhatsApp',value: '89',  change: '+8%',  color: 'text-green-500', bg: 'bg-green-50 dark:bg-green-950' },
-          { icon: Heart,         label: 'Guardados',        value: '34',   change: '+5%',  color: 'text-red-500',   bg: 'bg-red-50 dark:bg-red-950' },
-          { icon: TrendingUp,    label: 'Pos. promedio',   value: '#12',  change: '+3',   color: 'text-primary',   bg: 'bg-primary/5' },
-        ].map(({ icon: Icon, label, value, change, color, bg }) => (
+        {cards.map(({ icon: Icon, label, value, color, bg }) => (
           <div key={label} className="p-4 bg-card border border-border rounded-2xl">
-            <div className={`w-9 h-9 rounded-xl ${bg} flex items-center justify-center mb-3`}><Icon size={18} className={color} /></div>
-            <div className="text-2xl font-bold font-display">{value}</div>
+            <div className={`w-9 h-9 rounded-xl ${bg} flex items-center justify-center mb-3`}>
+              <Icon size={18} className={color} />
+            </div>
+            <div className="text-2xl font-bold font-display">{bizLoading ? '…' : value}</div>
             <div className="text-xs text-muted-foreground mt-0.5">{label}</div>
-            <div className="text-xs text-green-600 dark:text-green-400 mt-1 font-medium">{change} esta semana</div>
           </div>
         ))}
       </div>
 
       <div className="p-5 bg-card border border-border rounded-2xl">
-        <h2 className="font-semibold mb-4">Visitas y contactos (últimos 14 días)</h2>
-        <ResponsiveContainer width="100%" height={200}>
-          <LineChart data={MOCK_VIEWS}>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-            <XAxis dataKey="day" tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" />
-            <YAxis tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" />
-            <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 12 }} />
-            <Line type="monotone" dataKey="visitas" stroke="#ff4500" strokeWidth={2} dot={false} name="Visitas" />
-            <Line type="monotone" dataKey="contactos" stroke="#22c55e" strokeWidth={2} dot={false} name="Contactos" />
-          </LineChart>
-        </ResponsiveContainer>
+        <h2 className="font-semibold mb-4 flex items-center gap-2">
+          <TrendingUp size={16} className="text-muted-foreground" /> Publicaciones más vistas
+        </h2>
+        {postsLoading ? (
+          <div className="space-y-2">{[1,2,3].map(i => <div key={i} className="h-14 bg-muted rounded-xl animate-pulse" />)}</div>
+        ) : !topPosts.length ? (
+          <p className="text-sm text-muted-foreground py-6 text-center">
+            Aún no tienes publicaciones. <Link href="/dashboard/posts/new" className="text-primary font-medium hover:underline">Crea la primera</Link> para empezar a medir visitas.
+          </p>
+        ) : (
+          <div className="space-y-2">
+            {topPosts.map((post, i) => (
+              <Link key={post.id} href={`/post/${post.id}`}
+                className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-accent/60 transition-colors">
+                <span className="w-6 text-center text-sm font-bold text-muted-foreground tabular-nums">{i + 1}</span>
+                {post.images[0] ? (
+                  <div className="relative w-10 h-10 rounded-lg overflow-hidden shrink-0">
+                    <Image src={post.images[0]} alt="" fill sizes="40px" className="object-cover" />
+                  </div>
+                ) : (
+                  <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                    <FileText size={15} className="text-muted-foreground" />
+                  </div>
+                )}
+                <span className="flex-1 min-w-0 text-sm font-medium truncate">{post.title}</span>
+                <span className="flex items-center gap-1 text-xs text-muted-foreground tabular-nums shrink-0">
+                  <Eye size={12} /> {formatNumber(post.viewCount)}
+                </span>
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
 
-      <div className="p-5 bg-card border border-border rounded-2xl">
-        <h2 className="font-semibold mb-4">Visitas por día de semana</h2>
-        <ResponsiveContainer width="100%" height={150}>
-          <BarChart data={[
-            { day: 'Lun', v: 45 }, { day: 'Mar', v: 62 }, { day: 'Mié', v: 58 },
-            { day: 'Jue', v: 71 }, { day: 'Vie', v: 95 }, { day: 'Sáb', v: 110 }, { day: 'Dom', v: 78 },
-          ]}>
-            <XAxis dataKey="day" tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" />
-            <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 12 }} />
-            <Bar dataKey="v" fill="#ff4500" radius={[6, 6, 0, 0]} name="Visitas" />
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
+      <p className="text-xs text-muted-foreground">
+        Las visitas se cuentan cuando alguien abre tu perfil o una publicación. Próximamente: evolución diaria y contactos por WhatsApp.
+      </p>
     </div>
   )
 }

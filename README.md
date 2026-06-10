@@ -36,7 +36,7 @@ Miles de emprendedores y negocios locales de Santa Cruz venden únicamente por W
 | Auth en servidor | **Firebase Admin SDK** — session cookies httpOnly + verificación de rol |
 | Formularios | **React Hook Form** + **Zod** |
 | Mapas | **Leaflet** + **OpenStreetMap** |
-| UI / animación | **lucide-react**, **framer-motion**, **recharts**, **sonner** |
+| UI / animación | **lucide-react**, **framer-motion**, **sonner** |
 | Deploy | **Vercel** |
 | CI | **GitHub Actions** (typecheck · lint · build) |
 

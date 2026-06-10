@@ -89,7 +89,7 @@ export function BusinessMap({ businesses = [], center, zoom = 13, single, height
         })
 
         if (!cancelled) setLoading(false)
-      } catch (e) {
+      } catch {
         if (!cancelled) { setError(true); setLoading(false) }
       }
     }

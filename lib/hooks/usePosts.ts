@@ -3,9 +3,9 @@ import { useInfiniteQuery } from '@tanstack/react-query'
 import { type DocumentSnapshot } from 'firebase/firestore'
 import { getPosts, getPostsByBusiness } from '@/lib/firebase/firestore'
 
-interface Options { category?: string; businessId?: string; pageSize?: number }
+interface Options { category?: string; businessId?: string; pageSize?: number; enabled?: boolean }
 
-export function usePosts({ category, businessId, pageSize = 12 }: Options = {}) {
+export function usePosts({ category, businessId, pageSize = 12, enabled = true }: Options = {}) {
   const q = useInfiniteQuery({
     queryKey: ['posts', { category, businessId, pageSize }],
     queryFn: ({ pageParam }) =>
@@ -14,6 +14,7 @@ export function usePosts({ category, businessId, pageSize = 12 }: Options = {}) 
         : getPosts({ category, pageSize, cursor: pageParam }),
     initialPageParam: undefined as DocumentSnapshot | undefined,
     getNextPageParam: (last) => (last.posts.length === pageSize ? (last.lastDoc ?? undefined) : undefined),
+    enabled,
   })
 
   return {

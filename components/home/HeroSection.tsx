@@ -1,18 +1,30 @@
 'use client'
 import { motion } from 'framer-motion'
-import { MapPin, TrendingUp, Users, Store } from 'lucide-react'
+import { MapPin, LayoutGrid, Users, Store } from 'lucide-react'
 import { SearchBar } from '@/components/search/SearchBar'
-
-const STATS = [
-  { icon: Store,      value: '500+', label: 'Negocios'   },
-  { icon: Users,      value: '10k+', label: 'Usuarios'   },
-  { icon: TrendingUp, value: '50+',  label: 'Categorías' },
-  { icon: MapPin,     value: 'SCZ',  label: 'Bolivia'    },
-]
+import { BUSINESS_CATEGORIES, SCZ_ZONES } from '@/lib/utils/constants'
+import { formatNumber } from '@/lib/utils/formatters'
+import type { PublicStats } from '@/lib/firebase/admin'
 
 const easeOut = [0.22, 1, 0.36, 1] as const
 
-export function HeroSection() {
+interface HeroProps {
+  /** Real platform counts (null when unavailable — those stats are hidden). */
+  stats: PublicStats | null
+}
+
+export function HeroSection({ stats }: HeroProps) {
+  // Only real numbers: live counts when available + truly static facts.
+  const STATS = [
+    ...(stats && stats.activeBusinesses > 0
+      ? [{ icon: Store, value: formatNumber(stats.activeBusinesses), label: 'Negocios' }]
+      : []),
+    ...(stats && stats.users > 0
+      ? [{ icon: Users, value: formatNumber(stats.users), label: 'Usuarios' }]
+      : []),
+    { icon: LayoutGrid, value: String(BUSINESS_CATEGORIES.length), label: 'Categorías' },
+    { icon: MapPin, value: String(SCZ_ZONES.length), label: 'Zonas de SCZ' },
+  ]
   return (
     <section className="relative overflow-hidden pt-24 pb-20 md:pt-36 md:pb-28">
 

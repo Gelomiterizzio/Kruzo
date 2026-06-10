@@ -1,22 +1,24 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '@/lib/hooks/useAuth'
 import { getBusinessById } from '@/lib/firebase/firestore'
 import { PostForm } from '@/components/post/PostForm'
 import { ArrowLeft, AlertCircle } from 'lucide-react'
 import Link from 'next/link'
-import type { Business } from '@/lib/types/business'
 
 export default function NewPostPage() {
-  const { user } = useAuth()
-  const [business, setBusiness] = useState<Business | null | undefined>(undefined)
+  const { user, loading: authLoading } = useAuth()
+  const businessId = user?.businessIds?.[0]
 
-  useEffect(() => {
-    if (!user?.businessIds?.[0]) { setBusiness(null); return }
-    getBusinessById(user.businessIds[0]).then(setBusiness)
-  }, [user])
+  const { data: business, isLoading } = useQuery({
+    queryKey: ['business', businessId],
+    queryFn: () => getBusinessById(businessId!),
+    enabled: !!businessId,
+  })
 
-  if (business === undefined) return <div className="h-96 bg-muted rounded-2xl animate-pulse" />
+  if (authLoading || (businessId && isLoading)) {
+    return <div className="h-96 bg-muted rounded-2xl animate-pulse" />
+  }
 
   return (
     <div className="space-y-5">

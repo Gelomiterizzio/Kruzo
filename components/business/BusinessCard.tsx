@@ -9,16 +9,21 @@ import { useFavorites } from '@/lib/hooks/useFavorites'
 import { formatNumber } from '@/lib/utils/formatters'
 import type { Business } from '@/lib/types/business'
 
-interface Props { business: Business; index?: number }
+interface Props {
+  business: Business
+  index?: number
+  /** Set false when a parent already animates the card in (avoids double entrance). */
+  entrance?: boolean
+}
 
-export function BusinessCard({ business, index = 0 }: Props) {
+export function BusinessCard({ business, index = 0, entrance = true }: Props) {
   const { isFavorite, toggleFavorite } = useFavorites()
   const fav = isFavorite(business.id)
 
   return (
     <motion.article
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
+      initial={entrance ? { opacity: 0, y: 20 } : false}
+      animate={entrance ? { opacity: 1, y: 0 } : undefined}
       transition={{
         delay: index * 0.055,
         duration: 0.45,

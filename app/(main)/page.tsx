@@ -4,16 +4,22 @@ import { CategoryGrid } from '@/components/home/CategoryGrid'
 import { FeaturedSection } from '@/components/home/FeaturedSection'
 import { AdBannerInline } from '@/components/ads/AdBannerInline'
 import { AdBannerFooter } from '@/components/ads/AdBannerFooter'
+import { getPublicStats } from '@/lib/firebase/admin'
 
 export const metadata: Metadata = {
-  title: 'KRUZO — Tu Ciudad. Tu Mercado.',
+  title: { absolute: 'KRUZO — Tu Ciudad. Tu Mercado.' },
   description: 'Descubre negocios, emprendimientos y servicios de Santa Cruz de la Sierra, Bolivia. Conecta directamente por WhatsApp.',
 }
 
-export default function HomePage() {
+// Refresh the real platform counts hourly without a redeploy.
+export const revalidate = 3600
+
+export default async function HomePage() {
+  const stats = await getPublicStats()
+
   return (
     <div className="space-y-2">
-      <HeroSection />
+      <HeroSection stats={stats} />
       <CategoryGrid />
       <FeaturedSection
         title="Negocios destacados"

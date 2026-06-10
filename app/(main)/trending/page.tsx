@@ -2,14 +2,14 @@ import type { Metadata } from 'next'
 import { Suspense } from 'react'
 import { TrendingUp } from 'lucide-react'
 import { BusinessGrid } from '@/components/business/BusinessGrid'
-import { PostGrid } from '@/components/post/PostGrid'
+import { TrendingPosts } from '@/components/post/TrendingPosts'
 import { GridSkeleton } from '@/components/shared/SkeletonCard'
 import { AdBannerInline } from '@/components/ads/AdBannerInline'
 import { AdBannerFooter } from '@/components/ads/AdBannerFooter'
 
 export const metadata: Metadata = {
-  title: 'Tendencias | KRUZO',
-  description: 'Los negocios y productos más populares de Santa Cruz esta semana.',
+  title: 'Tendencias',
+  description: 'Los negocios destacados y los productos más vistos de Santa Cruz.',
 }
 
 export default function TrendingPage() {
@@ -20,7 +20,7 @@ export default function TrendingPage() {
           <TrendingUp size={14} /> Esta semana en KRUZO
         </div>
         <h1 className="text-3xl md:text-4xl font-display font-black">Tendencias</h1>
-        <p className="text-muted-foreground mt-2">Lo más visto y contactado de Santa Cruz</p>
+        <p className="text-muted-foreground mt-2">Negocios destacados y lo más visto de Santa Cruz</p>
       </div>
 
       <div>
@@ -33,9 +33,9 @@ export default function TrendingPage() {
       <AdBannerInline />
 
       <div>
-        <h2 className="text-xl font-display font-bold mb-5">🔥 Productos populares</h2>
+        <h2 className="text-xl font-display font-bold mb-5">🔥 Lo más visto</h2>
         <Suspense fallback={<GridSkeleton count={8} variant="post" />}>
-          <PostGrid pageSize={12} />
+          <TrendingPosts count={12} />
         </Suspense>
       </div>
 

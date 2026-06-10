@@ -5,9 +5,10 @@ import { CategoryGrid } from '@/components/home/CategoryGrid'
 import { SearchBar } from '@/components/search/SearchBar'
 import { GridSkeleton } from '@/components/shared/SkeletonCard'
 import { AdBannerTop } from '@/components/ads/AdBannerTop'
+import { getCategoryInfo } from '@/components/shared/CategoryBadge'
 
 export const metadata: Metadata = {
-  title: 'Explorar negocios | KRUZO',
+  title: 'Explorar negocios',
   description: 'Descubre todos los negocios y emprendimientos de Santa Cruz de la Sierra.',
 }
 
@@ -31,7 +32,7 @@ export default async function ExplorePage({ searchParams }: Props) {
 
       <div>
         <h2 className="text-xl font-display font-bold mb-5">
-          {filter === 'featured' ? '⭐ Negocios destacados' : cat ? `Resultados en "${cat}"` : 'Todos los negocios'}
+          {filter === 'featured' ? '⭐ Negocios destacados' : cat ? `Resultados en ${getCategoryInfo(cat).label}` : 'Todos los negocios'}
         </h2>
         <Suspense fallback={<GridSkeleton count={8} />}>
           <BusinessGrid

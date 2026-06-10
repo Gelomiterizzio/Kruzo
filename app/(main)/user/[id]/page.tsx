@@ -4,7 +4,7 @@ import { doc, getDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase/config'
 import type { AppUser } from '@/lib/types/user'
 import { getInitials, formatDate } from '@/lib/utils/formatters'
-import { BadgeCheck, CalendarDays, Store, Star } from 'lucide-react'
+import { BadgeCheck, CalendarDays, Store } from 'lucide-react'
 
 // ── Next.js 16: params is now a Promise ──────────────────────────────────────
 interface Props { params: Promise<{ id: string }> }
@@ -12,10 +12,10 @@ interface Props { params: Promise<{ id: string }> }
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params
   const snap = await getDoc(doc(db, 'users', id))
-  if (!snap.exists()) return { title: 'Usuario no encontrado | KRUZO' }
+  if (!snap.exists()) return { title: 'Usuario no encontrado' }
   const u = snap.data() as AppUser
   return {
-    title: `${u.displayName} | KRUZO`,
+    title: u.displayName,
     description: u.bio || `Perfil de ${u.displayName} en KRUZO`,
   }
 }
@@ -60,10 +60,7 @@ export default async function UserProfilePage({ params }: Props) {
                 <CalendarDays size={12} /> Desde {formatDate(user.createdAt)}
               </span>
               <span className="flex items-center gap-1">
-                <Store size={12} /> {user.businessIds?.length ?? 0} negocios
-              </span>
-              <span className="flex items-center gap-1">
-                <Star size={12} /> {user.reviewCount ?? 0} reseñas
+                <Store size={12} /> {user.businessIds?.length ?? 0} {(user.businessIds?.length ?? 0) === 1 ? 'negocio' : 'negocios'}
               </span>
             </div>
           </div>

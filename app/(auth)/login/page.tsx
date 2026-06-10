@@ -70,12 +70,14 @@ export default function LoginPage() {
           </div>
         )}
         <div>
-          <input {...register('email')} type="email" placeholder="tu@email.com" autoComplete="email" className={inputCls} />
+          <label htmlFor="login-email" className="sr-only">Email</label>
+          <input id="login-email" {...register('email')} type="email" placeholder="tu@email.com" autoComplete="email" className={inputCls} />
           {errors.email && <p className="text-xs text-destructive mt-1">{errors.email.message}</p>}
         </div>
         <div className="relative">
-          <input {...register('password')} type={showPw ? 'text' : 'password'} placeholder="Contraseña" autoComplete="current-password" className={`${inputCls} pr-10`} />
-          <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+          <label htmlFor="login-password" className="sr-only">Contraseña</label>
+          <input id="login-password" {...register('password')} type={showPw ? 'text' : 'password'} placeholder="Contraseña" autoComplete="current-password" className={`${inputCls} pr-10`} />
+          <button type="button" onClick={() => setShowPw(!showPw)} aria-label={showPw ? 'Ocultar contraseña' : 'Mostrar contraseña'} className="absolute right-3 top-3.5 text-muted-foreground hover:text-foreground">
             {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
           </button>
           {errors.password && <p className="text-xs text-destructive mt-1">{errors.password.message}</p>}
