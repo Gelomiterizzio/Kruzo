@@ -8,8 +8,9 @@
   },
   "functions": {
     "source": "functions",
-    "runtime": "nodejs20",
-    "ignore": ["node_modules", ".git", "*.log"]
+    "runtime": "nodejs22",
+    "ignore": ["node_modules", ".git", "*.log"],
+    "predeploy": ["npm --prefix \"$RESOURCE_DIR\" install"]
   },
   "emulators": {
     "auth": { "port": 9099 },

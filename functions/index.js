@@ -16,7 +16,9 @@ const { applyReviewDelta, visibleRating } = require('./lib/aggregate')
 
 initializeApp()
 const db = getFirestore()
-setGlobalOptions({ region: 'us-central1', maxInstances: 10 })
+// Co-locate the functions with the Firestore database (and therefore the
+// Eventarc trigger) in southamerica-east1 — avoids a cross-region trigger.
+setGlobalOptions({ region: 'southamerica-east1', maxInstances: 10 })
 
 // Recompute a business's review aggregates whenever one of its reviews is
 // created, edited (rating/hidden), or deleted.
