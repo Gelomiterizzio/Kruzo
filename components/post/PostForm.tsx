@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
+import { deleteField } from 'firebase/firestore'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Loader2, Save } from 'lucide-react'
@@ -90,6 +91,9 @@ export function PostForm({ business, existing }: Props) {
           ...data,
           tags: data.tags.split(',').map(t => t.trim()).filter(Boolean),
           deliveryZones: data.deliveryZones.split(',').map(t => t.trim()).filter(Boolean),
+          // When the price is no longer "fixed with discount", remove any stale
+          // originalPrice so cards stop showing a phantom -X% badge.
+          ...(data.originalPrice === undefined ? { originalPrice: deleteField() } : {}),
         } as Partial<Post>)
         toast.success('Publicación actualizada')
       }

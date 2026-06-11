@@ -6,8 +6,9 @@ export const runtime = 'nodejs'
 
 /**
  * DELETE — permanently deletes the signed-in user's account:
- * Auth user + Firestore profile; their businesses are suspended (not deleted)
- * so reviews/posts don't dangle publicly under an orphaned active listing.
+ * Auth user + Firestore profile. Their businesses are suspended and their
+ * posts soft-deleted so no orphaned content stays publicly visible or
+ * searchable after the owner is gone.
  */
 export async function DELETE() {
   const session = await getSessionUser()
@@ -18,11 +19,15 @@ export async function DELETE() {
   try {
     const db = adminDb()
 
-    // Suspend any businesses owned by the account.
-    const owned = await db.collection('businesses').where('ownerId', '==', session.uid).get()
-    if (!owned.empty) {
+    // Take the account's content offline: businesses suspended, posts deleted.
+    const [ownedBiz, ownedPosts] = await Promise.all([
+      db.collection('businesses').where('ownerId', '==', session.uid).get(),
+      db.collection('posts').where('ownerId', '==', session.uid).get(),
+    ])
+    if (!ownedBiz.empty || !ownedPosts.empty) {
       const batch = db.batch()
-      owned.docs.forEach((d) => batch.update(d.ref, { status: 'suspended' }))
+      ownedBiz.docs.forEach((d) => batch.update(d.ref, { status: 'suspended' }))
+      ownedPosts.docs.forEach((d) => batch.update(d.ref, { status: 'deleted' }))
       await batch.commit()
     }
 

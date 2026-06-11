@@ -45,13 +45,14 @@ service cloud.firestore {
             && request.resource.data.status == 'pending'
             && request.resource.data.isVerified == false
             && request.resource.data.isFeatured == false);
-      // Owners manage their content; moderation, identity and aggregate
-      // fields stay locked (no self-approval / self-feature / counter edits).
+      // Owners manage their content; moderation, identity, aggregate and
+      // recency fields stay locked (no self-approval / self-feature /
+      // counter edits / createdAt forgery).
       allow update: if isAdmin()
         || (isOwner(resource)
             && keepsLocked(['ownerId', 'slug', 'status', 'isVerified', 'isFeatured', 'featuredUntil', 'plan',
                             'rating', 'reviewCount', 'ratingDistribution', 'viewCount', 'favoriteCount',
-                            'shareCount', 'contactCount'].toSet()));
+                            'shareCount', 'contactCount', 'createdAt'].toSet()));
       allow delete: if isOwner(resource) || isAdmin();
       match /reviews/{rid} {
         allow read: if true;
@@ -61,10 +62,14 @@ service cloud.firestore {
           && rid == request.auth.uid
           && request.resource.data.userId == request.auth.uid
           && request.resource.data.rating >= 1 && request.resource.data.rating <= 5;
-        // Authors may edit/delete their review but not its moderation flags.
+        // Authors may edit/delete their review (rating/comment) but not its
+        // moderation flags, identity, timestamps or the owner's reply —
+        // otherwise an author could forge a "business owner response" or
+        // impersonate someone else.
         allow update: if isAdmin()
           || (isOwner(resource)
-              && keepsLocked(['userId', 'businessId', 'isVerified', 'isHidden', 'reportCount'].toSet()));
+              && keepsLocked(['userId', 'businessId', 'isVerified', 'isHidden', 'reportCount',
+                              'ownerReply', 'ownerRepliedAt', 'userName', 'userPhoto', 'createdAt'].toSet()));
         allow delete: if isOwner(resource) || isAdmin();
       }
     }
@@ -77,10 +82,15 @@ service cloud.firestore {
         || (isAuth()
             && request.resource.data.ownerId == request.auth.uid
             && get(/databases/$(database)/documents/businesses/$(request.resource.data.businessId)).data.ownerId == request.auth.uid);
+      // Owners edit their post content and may soft-delete it, but cannot
+      // reactivate a post an admin paused/removed (status may only stay the
+      // same or become 'deleted') nor forge counters/recency.
       allow update: if isAdmin()
         || (isOwner(resource)
             && keepsLocked(['ownerId', 'businessId', 'isFeatured',
-                            'viewCount', 'likeCount', 'commentCount', 'shareCount'].toSet()));
+                            'viewCount', 'likeCount', 'commentCount', 'shareCount', 'createdAt'].toSet())
+            && (request.resource.data.status == resource.data.status
+                || request.resource.data.status == 'deleted'));
       allow delete: if isOwner(resource) || isAdmin();
       match /comments/{cid} {
         allow read: if true;
