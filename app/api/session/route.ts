@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server'
-import { adminAuth, SESSION_COOKIE } from '@/lib/firebase/admin'
+import { adminAuth, adminDb, SESSION_COOKIE } from '@/lib/firebase/admin'
 
 // firebase-admin needs the Node.js runtime (not Edge).
 export const runtime = 'nodejs'
@@ -20,7 +20,13 @@ export async function POST(req: NextRequest) {
     }
 
     // Validates signature, expiry and issuer before trusting the token.
-    await adminAuth().verifyIdToken(idToken)
+    const decoded = await adminAuth().verifyIdToken(idToken)
+
+    // Banned accounts never get a server session.
+    const userSnap = await adminDb().collection('users').doc(decoded.uid).get()
+    if (userSnap.exists && userSnap.data()?.isBanned === true) {
+      return NextResponse.json({ error: 'Cuenta suspendida' }, { status: 403 })
+    }
 
     const sessionCookie = await adminAuth().createSessionCookie(idToken, {
       expiresIn: EXPIRES_IN_MS,

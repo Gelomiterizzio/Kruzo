@@ -2,10 +2,9 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { MessageCircle, Eye, Tag, Truck } from 'lucide-react'
+import { Eye, Truck } from 'lucide-react'
 import { WhatsAppButton } from '@/components/shared/WhatsAppButton'
 import { formatPrice, formatNumber } from '@/lib/utils/formatters'
-import { buildWhatsAppPostURL } from '@/lib/utils/whatsapp'
 import type { Post } from '@/lib/types/post'
 
 interface Props { post: Post; index?: number }
@@ -53,10 +52,9 @@ export function PostCard({ post, index = 0 }: Props) {
           {post.priceType === 'negotiable' && <span className="text-xs text-muted-foreground italic">Negociable</span>}
         </div>
 
-        {/* Stats */}
+        {/* Stats — views are the only counter the platform actually tracks */}
         <div className="flex items-center gap-3 text-xs text-muted-foreground mt-auto">
           <span className="flex items-center gap-1"><Eye size={11} /> {formatNumber(post.viewCount)}</span>
-          <span className="flex items-center gap-1"><MessageCircle size={11} /> {formatNumber(post.commentCount)}</span>
         </div>
 
         <WhatsAppButton phone={post.whatsapp} businessName={post.businessName} postTitle={post.title} price={post.price} size="sm" className="w-full" />

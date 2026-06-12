@@ -6,6 +6,12 @@ import type { AppUser } from '@/lib/types/user'
 import { getInitials, formatRelativeTime } from '@/lib/utils/formatters'
 import { Shield, Ban, CheckCircle } from 'lucide-react'
 import { toast } from 'sonner'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
+
+type PendingAction =
+  | { kind: 'ban'; user: AppUser }
+  | { kind: 'make-admin'; user: AppUser }
+  | null
 
 const ROLE_CFG = {
   admin:        { label: 'Admin',       cls: 'bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-400' },
@@ -16,6 +22,7 @@ const ROLE_CFG = {
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<AppUser[]>([])
   const [loading, setLoading] = useState(true)
+  const [pending, setPending] = useState<PendingAction>(null)
 
   useEffect(() => {
     getDocs(query(collection(db, 'users'), orderBy('createdAt', 'desc'), limit(100)))
@@ -27,7 +34,7 @@ export default function AdminUsersPage() {
   const setRole = async (uid: string, role: string) => {
     try {
       await updateDoc(doc(db, 'users', uid), { role })
-      setUsers(prev => prev.map(u => u.id === uid ? { ...u, role: role as any } : u))
+      setUsers(prev => prev.map(u => u.id === uid ? { ...u, role: role as AppUser['role'] } : u))
       toast.success('Rol actualizado')
     } catch { toast.error('Error al actualizar') }
   }
@@ -68,13 +75,18 @@ export default function AdminUsersPage() {
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
                   <span className={`text-xs px-2 py-0.5 rounded-full ${cfg.cls}`}>{cfg.label}</span>
-                  <select value={u.role} onChange={e => setRole(u.id, e.target.value)}
+                  <select value={u.role} aria-label={`Rol de ${u.displayName || u.email}`}
+                    onChange={e => {
+                      // Granting admin is the most sensitive action — confirm it.
+                      if (e.target.value === 'admin') setPending({ kind: 'make-admin', user: u })
+                      else setRole(u.id, e.target.value)
+                    }}
                     className="text-xs px-2 py-1 border border-border rounded-lg bg-background">
                     <option value="user">Usuario</option>
                     <option value="entrepreneur">Emprendedor</option>
                     <option value="admin">Admin</option>
                   </select>
-                  <button onClick={() => toggleBan(u.id, u.isBanned)}
+                  <button onClick={() => u.isBanned ? toggleBan(u.id, true) : setPending({ kind: 'ban', user: u })}
                     className={`p-1.5 rounded-lg transition-colors ${u.isBanned ? 'bg-green-100 dark:bg-green-950 text-green-600' : 'hover:bg-red-100 dark:hover:bg-red-950 text-muted-foreground hover:text-red-600'}`}
                     title={u.isBanned ? 'Reactivar' : 'Suspender'}>
                     {u.isBanned ? <CheckCircle size={14} /> : <Ban size={14} />}
@@ -85,6 +97,26 @@ export default function AdminUsersPage() {
           })}
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!pending}
+        title={pending?.kind === 'make-admin' ? '¿Dar permisos de administrador?' : '¿Suspender a este usuario?'}
+        description={
+          pending?.kind === 'make-admin'
+            ? `${pending.user.displayName || pending.user.email} tendrá control total de la plataforma (negocios, usuarios, reportes).`
+            : pending
+              ? `${pending.user.displayName || pending.user.email} no podrá iniciar sesión ni usar su cuenta.`
+              : ''
+        }
+        confirmLabel={pending?.kind === 'make-admin' ? 'Dar admin' : 'Suspender'}
+        variant="danger"
+        onConfirm={() => {
+          if (pending?.kind === 'make-admin') setRole(pending.user.id, 'admin')
+          if (pending?.kind === 'ban') toggleBan(pending.user.id, false)
+          setPending(null)
+        }}
+        onCancel={() => setPending(null)}
+      />
     </div>
   )
 }

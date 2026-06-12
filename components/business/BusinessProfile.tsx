@@ -1,10 +1,11 @@
 'use client'
 import Image from 'next/image'
 import { useState } from 'react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
+import { toast } from 'sonner'
 import {
   Phone, Globe, Instagram, Facebook, MapPin, Clock, BadgeCheck,
-  Heart, Share2, Star, Eye, MessageCircle, ChevronRight, Truck, CreditCard
+  Heart, Share2, Star, Eye, ChevronLeft, ChevronRight, Truck, CreditCard
 } from 'lucide-react'
 import { WhatsAppButton } from '@/components/shared/WhatsAppButton'
 import { AdBannerInline } from '@/components/ads/AdBannerInline'
@@ -17,7 +18,7 @@ import { PostCard } from '@/components/post/PostCard'
 import { useFavorites } from '@/lib/hooks/useFavorites'
 import { useReviews } from '@/lib/hooks/useReviews'
 import { usePosts } from '@/lib/hooks/usePosts'
-import { formatNumber, formatRelativeTime, isOpenNow } from '@/lib/utils/formatters'
+import { formatNumber, isOpenNow } from '@/lib/utils/formatters'
 import type { Business } from '@/lib/types/business'
 import { cn } from '@/lib/utils/cn'
 
@@ -31,36 +32,71 @@ export function BusinessProfile({ business }: { business: Business }) {
   const [tab, setTab] = useState(0)
   const [imgIdx, setImgIdx] = useState(0)
   const { isFavorite, toggleFavorite } = useFavorites()
-  const { reviews, loading: revLoading, hasMore: revHasMore, loadMore: loadMoreRev } = useReviews(business.id)
+  const { reviews, hasMore: revHasMore, loadMore: loadMoreRev, refetch: refetchReviews } = useReviews(business.id)
   const { posts, loading: postsLoading } = usePosts({ businessId: business.id })
   const fav = isFavorite(business.id)
-  const open = isOpenNow(business.hours as any)
+  const open = isOpenNow(business.hours)
   const allImages = [business.coverImage, ...business.images].filter(Boolean)
 
   const handleShare = async () => {
+    const url = window.location.href
+    if (navigator.share) {
+      try { await navigator.share({ title: business.name, url }) } catch { /* user cancelled */ }
+      return
+    }
     try {
-      await navigator.share({ title: business.name, url: window.location.href })
+      await navigator.clipboard.writeText(url)
+      toast.success('Enlace copiado al portapapeles')
     } catch {
-      navigator.clipboard.writeText(window.location.href)
+      toast.error('No se pudo copiar el enlace')
     }
   }
 
   return (
-    <div className="max-w-3xl mx-auto space-y-4">
+    <div className="max-w-3xl mx-auto space-y-4 pb-20 lg:pb-0">
       {/* Cover gallery */}
-      <div className="relative h-56 md:h-72 rounded-2xl overflow-hidden bg-muted">
-        {allImages[imgIdx] ? (
-          <Image src={allImages[imgIdx]} alt={business.name} fill className="object-cover" priority sizes="(max-width:768px) 100vw, 768px" />
+      <div className="relative h-56 md:h-72 rounded-2xl overflow-hidden bg-muted group/gallery">
+        {allImages.length > 0 ? (
+          <AnimatePresence initial={false}>
+            <motion.div
+              key={imgIdx}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              className="absolute inset-0"
+            >
+              <Image src={allImages[imgIdx]} alt={business.name} fill className="object-cover" priority sizes="(max-width:768px) 100vw, 768px" />
+            </motion.div>
+          </AnimatePresence>
         ) : (
           <div className="h-full flex items-center justify-center text-6xl">🏪</div>
         )}
         {allImages.length > 1 && (
-          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
-            {allImages.map((_, i) => (
-              <button key={i} onClick={() => setImgIdx(i)}
-                className={cn('w-2 h-2 rounded-full transition-all', i === imgIdx ? 'bg-white w-4' : 'bg-white/50')} />
-            ))}
-          </div>
+          <>
+            <button
+              onClick={() => setImgIdx((imgIdx - 1 + allImages.length) % allImages.length)}
+              aria-label="Imagen anterior"
+              className="absolute left-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-black/40 text-white opacity-0 group-hover/gallery:opacity-100 focus-visible:opacity-100 transition-opacity hover:bg-black/60"
+            >
+              <ChevronLeft size={18} />
+            </button>
+            <button
+              onClick={() => setImgIdx((imgIdx + 1) % allImages.length)}
+              aria-label="Imagen siguiente"
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-black/40 text-white opacity-0 group-hover/gallery:opacity-100 focus-visible:opacity-100 transition-opacity hover:bg-black/60"
+            >
+              <ChevronRight size={18} />
+            </button>
+            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+              {allImages.map((_, i) => (
+                <button key={i} onClick={() => setImgIdx(i)}
+                  aria-label={`Ver imagen ${i + 1} de ${allImages.length}`}
+                  aria-current={i === imgIdx}
+                  className={cn('h-2.5 rounded-full transition-all', i === imgIdx ? 'bg-white w-5' : 'bg-white/50 w-2.5 hover:bg-white/75')} />
+              ))}
+            </div>
+          </>
         )}
       </div>
 
@@ -131,9 +167,13 @@ export function BusinessProfile({ business }: { business: Business }) {
       <div className="border-b border-border flex gap-1 overflow-x-auto no-scrollbar px-1">
         {TABS.map((t, i) => (
           <button key={t} onClick={() => setTab(i)}
-            className={cn('px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 -mb-px transition-colors',
-              tab === i ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground')}>
+            className={cn('relative px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors',
+              tab === i ? 'text-primary' : 'text-muted-foreground hover:text-foreground')}>
             {t}
+            {tab === i && (
+              <motion.span layoutId="business-tab" className="absolute inset-x-0 -bottom-px h-0.5 bg-primary"
+                transition={{ type: 'spring', bounce: 0.2, duration: 0.4 }} />
+            )}
           </button>
         ))}
       </div>
@@ -169,7 +209,7 @@ export function BusinessProfile({ business }: { business: Business }) {
                 </div>
               </div>
             </div>
-            <ReviewForm businessId={business.id} />
+            <ReviewForm businessId={business.id} onSuccess={() => refetchReviews()} />
             <div className="space-y-3">
               {reviews.map((r, i) => <ReviewCard key={r.id} review={r} index={i} />)}
               {revHasMore && (
@@ -227,6 +267,19 @@ export function BusinessProfile({ business }: { business: Business }) {
       </div>
 
       <AdBannerInline />
+
+      {/* Sticky contact bar on mobile: the #1 conversion action is always one
+          tap away while browsing the profile. */}
+      <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 p-3 bg-background/95 backdrop-blur-xl border-t border-border/60 [padding-bottom:max(0.75rem,env(safe-area-inset-bottom))]">
+        <div className="max-w-3xl mx-auto flex gap-2">
+          <WhatsAppButton phone={business.whatsapp} businessName={business.name} size="md" className="flex-1" label="Contactar por WhatsApp" />
+          <button onClick={() => toggleFavorite(business.id, business.name)}
+            aria-label={fav ? 'Quitar de favoritos' : 'Guardar en favoritos'}
+            className="px-3.5 border border-border rounded-xl bg-card hover:bg-accent transition-colors">
+            <Heart size={17} className={fav ? 'fill-red-500 text-red-500' : ''} />
+          </button>
+        </div>
+      </div>
     </div>
   )
 }

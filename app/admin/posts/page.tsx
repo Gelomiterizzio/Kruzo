@@ -1,16 +1,18 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { collection, query, orderBy, limit, getDocs, doc, updateDoc, deleteDoc } from 'firebase/firestore'
+import { collection, query, orderBy, limit, getDocs, doc, updateDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase/config'
 import type { Post } from '@/lib/types/post'
 import { formatPrice, formatRelativeTime } from '@/lib/utils/formatters'
 import { FileText, Eye, Trash2, ToggleLeft, ToggleRight } from 'lucide-react'
 import Link from 'next/link'
 import { toast } from 'sonner'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 
 export default function AdminPostsPage() {
   const [posts, setPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(true)
+  const [toDelete, setToDelete] = useState<Post | null>(null)
 
   useEffect(() => {
     getDocs(query(collection(db, 'posts'), orderBy('createdAt', 'desc'), limit(100)))
@@ -23,13 +25,12 @@ export default function AdminPostsPage() {
     const next = status === 'active' ? 'paused' : 'active'
     try {
       await updateDoc(doc(db, 'posts', id), { status: next })
-      setPosts(prev => prev.map(p => p.id === id ? { ...p, status: next as any } : p))
+      setPosts(prev => prev.map(p => p.id === id ? { ...p, status: next as Post['status'] } : p))
       toast.success(`Publicación ${next === 'active' ? 'activada' : 'pausada'}`)
     } catch { toast.error('Error') }
   }
 
   const deletePost = async (id: string) => {
-    if (!confirm('¿Eliminar esta publicación permanentemente?')) return
     try {
       await updateDoc(doc(db, 'posts', id), { status: 'deleted' })
       setPosts(prev => prev.filter(p => p.id !== id))
@@ -64,12 +65,22 @@ export default function AdminPostsPage() {
                   {p.status === 'active' ? <ToggleRight size={16} className="text-green-500" /> : <ToggleLeft size={16} className="text-muted-foreground" />}
                 </button>
                 <Link href={`/post/${p.id}`} target="_blank" className="p-1.5 rounded-lg hover:bg-accent transition-colors"><Eye size={14} /></Link>
-                <button onClick={() => deletePost(p.id)} className="p-1.5 rounded-lg hover:bg-red-100 dark:hover:bg-red-950 text-muted-foreground hover:text-red-600 transition-colors"><Trash2 size={14} /></button>
+                <button onClick={() => setToDelete(p)} aria-label="Eliminar publicación" className="p-1.5 rounded-lg hover:bg-red-100 dark:hover:bg-red-950 text-muted-foreground hover:text-red-600 transition-colors"><Trash2 size={14} /></button>
               </div>
             </div>
           ))}
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!toDelete}
+        title="¿Eliminar esta publicación?"
+        description={toDelete ? `"${toDelete.title}" de ${toDelete.businessName} dejará de ser visible permanentemente.` : ''}
+        confirmLabel="Eliminar"
+        variant="danger"
+        onConfirm={() => { if (toDelete) deletePost(toDelete.id); setToDelete(null) }}
+        onCancel={() => setToDelete(null)}
+      />
     </div>
   )
 }

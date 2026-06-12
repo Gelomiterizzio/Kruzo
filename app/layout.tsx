@@ -3,6 +3,7 @@ import { Syne, DM_Sans } from 'next/font/google'
 import { ThemeProvider } from '@/providers/ThemeProvider'
 import { AuthProvider } from '@/providers/AuthProvider'
 import { QueryProvider } from '@/providers/QueryProvider'
+import { MotionProvider } from '@/providers/MotionProvider'
 import { ServiceWorkerRegister } from '@/components/shared/ServiceWorkerRegister'
 import { AdSenseScript } from '@/components/ads/AdSenseScript'
 import { Toaster } from 'sonner'
@@ -81,6 +82,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           enableSystem
           disableTransitionOnChange
         >
+          <MotionProvider>
           <QueryProvider>
             <AuthProvider>
               {children}
@@ -94,6 +96,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </AuthProvider>
             <AdSenseScript />
           </QueryProvider>
+          </MotionProvider>
         </ThemeProvider>
       </body>
     </html>

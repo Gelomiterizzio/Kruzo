@@ -61,22 +61,26 @@ export default function RegisterPage() {
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         {error && <div className="p-3 bg-destructive/10 text-destructive text-sm rounded-xl border border-destructive/20">{error}</div>}
         <div>
-          <input {...register('name')} placeholder="Tu nombre completo" autoComplete="name" className={inputCls} />
+          <label htmlFor="reg-name" className="sr-only">Nombre completo</label>
+          <input id="reg-name" {...register('name')} placeholder="Tu nombre completo" autoComplete="name" className={inputCls} />
           {errors.name && <p className="text-xs text-destructive mt-1">{errors.name.message}</p>}
         </div>
         <div>
-          <input {...register('email')} type="email" placeholder="tu@email.com" autoComplete="email" className={inputCls} />
+          <label htmlFor="reg-email" className="sr-only">Email</label>
+          <input id="reg-email" {...register('email')} type="email" placeholder="tu@email.com" autoComplete="email" className={inputCls} />
           {errors.email && <p className="text-xs text-destructive mt-1">{errors.email.message}</p>}
         </div>
         <div className="relative">
-          <input {...register('password')} type={showPw ? 'text' : 'password'} placeholder="Contraseña (mín. 6 caracteres)" autoComplete="new-password" className={`${inputCls} pr-10`} />
-          <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+          <label htmlFor="reg-password" className="sr-only">Contraseña</label>
+          <input id="reg-password" {...register('password')} type={showPw ? 'text' : 'password'} placeholder="Contraseña (mín. 6 caracteres)" autoComplete="new-password" className={`${inputCls} pr-10`} />
+          <button type="button" onClick={() => setShowPw(!showPw)} aria-label={showPw ? 'Ocultar contraseña' : 'Mostrar contraseña'} className="absolute right-3 top-3.5 text-muted-foreground hover:text-foreground">
             {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
           </button>
           {errors.password && <p className="text-xs text-destructive mt-1">{errors.password.message}</p>}
         </div>
         <div>
-          <input {...register('confirmPassword')} type="password" placeholder="Confirmar contraseña" autoComplete="new-password" className={inputCls} />
+          <label htmlFor="reg-confirm" className="sr-only">Confirmar contraseña</label>
+          <input id="reg-confirm" {...register('confirmPassword')} type="password" placeholder="Confirmar contraseña" autoComplete="new-password" className={inputCls} />
           {errors.confirmPassword && <p className="text-xs text-destructive mt-1">{errors.confirmPassword.message}</p>}
         </div>
         <p className="text-xs text-muted-foreground">

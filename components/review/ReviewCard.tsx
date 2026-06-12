@@ -3,12 +3,39 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Flag, ChevronDown, ChevronUp, CheckCircle } from 'lucide-react'
 import { StarRating } from './StarRating'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
+import { reportReview } from '@/lib/firebase/firestore'
+import { useAuth } from '@/lib/hooks/useAuth'
 import { formatRelativeTime, getInitials, truncate } from '@/lib/utils/formatters'
+import { toast } from 'sonner'
 import type { Review } from '@/lib/types/review'
 
 export function ReviewCard({ review, index = 0 }: { review: Review; index?: number }) {
+  const { user } = useAuth()
   const [expanded, setExpanded] = useState(false)
+  const [confirmReport, setConfirmReport] = useState(false)
+  const [reporting, setReporting] = useState(false)
   const isLong = review.comment.length > 200
+
+  const handleReportClick = () => {
+    if (!user) { toast.error('Inicia sesión para reportar contenido'); return }
+    setConfirmReport(true)
+  }
+
+  const submitReport = async () => {
+    if (!user) return
+    setReporting(true)
+    try {
+      await reportReview(review.businessId, review.id, user.id)
+      toast.success('Reseña reportada. Nuestro equipo la revisará.')
+    } catch {
+      // The fixed doc id makes a second report a denied update.
+      toast.error('Ya reportaste esta reseña')
+    } finally {
+      setReporting(false)
+      setConfirmReport(false)
+    }
+  }
 
   return (
     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.04 }}
@@ -52,10 +79,22 @@ export function ReviewCard({ review, index = 0 }: { review: Review; index?: numb
       )}
 
       <div className="flex justify-end">
-        <button className="flex items-center gap-1 text-xs text-muted-foreground hover:text-destructive transition-colors">
+        <button onClick={handleReportClick}
+          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-destructive transition-colors">
           <Flag size={12} /> Reportar
         </button>
       </div>
+
+      <ConfirmDialog
+        open={confirmReport}
+        title="¿Reportar esta reseña?"
+        description="Nuestro equipo de moderación la revisará y decidirá si corresponde ocultarla."
+        confirmLabel="Reportar"
+        variant="danger"
+        loading={reporting}
+        onConfirm={submitReport}
+        onCancel={() => setConfirmReport(false)}
+      />
     </motion.div>
   )
 }

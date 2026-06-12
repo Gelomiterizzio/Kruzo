@@ -112,8 +112,11 @@ const nextConfig = {
     },
   },
 
-  // Stable in Next.js 16 (moved out of experimental)
-  optimizePackageImports: ['lucide-react', 'framer-motion'],
+  // Next.js 16.2 still expects this under `experimental` (a top-level key is
+  // rejected as "unrecognized" and silently ignored).
+  experimental: {
+    optimizePackageImports: ['lucide-react', 'framer-motion'],
+  },
 
   async headers() {
     return [
@@ -121,10 +124,8 @@ const nextConfig = {
         source: '/(.*)',
         headers: securityHeaders,
       },
-      {
-        source: '/_next/static/(.*)',
-        headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
-      },
+      // Note: no custom Cache-Control for /_next/static — Next already serves
+      // hashed assets as immutable, and overriding it breaks dev behavior.
     ]
   },
 

@@ -1,14 +1,13 @@
 import type { Metadata } from 'next'
-import { Suspense } from 'react'
 import { SearchBar } from '@/components/search/SearchBar'
 import { SearchFilters } from '@/components/search/SearchFilters'
-import { BusinessGrid } from '@/components/business/BusinessGrid'
-import { PostGrid } from '@/components/post/PostGrid'
-import { GridSkeleton } from '@/components/shared/SkeletonCard'
+import { SearchResults } from '@/components/search/SearchResults'
 import { AdBannerSidebar } from '@/components/ads/AdBannerSidebar'
+import { getCategoryInfo } from '@/components/shared/CategoryBadge'
+import type { SearchSort } from '@/lib/firebase/firestore'
 
 export const metadata: Metadata = {
-  title: 'Buscar | KRUZO',
+  title: 'Buscar',
   description: 'Busca negocios, servicios y productos en Santa Cruz de la Sierra.',
 }
 
@@ -23,15 +22,18 @@ interface Props {
   }>
 }
 
+const VALID_SORTS: SearchSort[] = ['recent', 'rating', 'popular', 'featured']
+
 export default async function SearchPage({ searchParams }: Props) {
   const { q, cat, zone, sort, type } = await searchParams
   const hasQuery = !!(q || cat || zone)
+  const safeSort = VALID_SORTS.includes(sort as SearchSort) ? (sort as SearchSort) : undefined
 
   return (
     <div className="container pt-24 pb-16">
       <div className="mb-6">
         <h1 className="text-2xl font-display font-bold mb-4">
-          {q ? `Resultados para "${q}"` : cat ? `Categoría: ${cat}` : 'Buscar en KRUZO'}
+          {q ? `Resultados para "${q}"` : cat ? `Categoría: ${getCategoryInfo(cat).label}` : 'Buscar en KRUZO'}
         </h1>
         <SearchBar placeholder="Refinar búsqueda…" size="sm" />
       </div>
@@ -56,24 +58,7 @@ export default async function SearchPage({ searchParams }: Props) {
               <p className="text-sm mt-1">Negocios, servicios, productos…</p>
             </div>
           ) : (
-            <div className="space-y-8">
-              {(type === 'businesses' || !type) && (
-                <div>
-                  <h2 className="font-semibold mb-4">Negocios</h2>
-                  <Suspense fallback={<GridSkeleton count={4} />}>
-                    <BusinessGrid category={cat} zone={zone} pageSize={12} inFeedAd />
-                  </Suspense>
-                </div>
-              )}
-              {(type === 'posts' || !type) && (
-                <div>
-                  <h2 className="font-semibold mb-4">Productos y servicios</h2>
-                  <Suspense fallback={<GridSkeleton count={4} variant="post" />}>
-                    <PostGrid category={cat} pageSize={12} />
-                  </Suspense>
-                </div>
-              )}
-            </div>
+            <SearchResults q={q} category={cat} zone={zone} sort={safeSort} type={type} />
           )}
         </div>
       </div>

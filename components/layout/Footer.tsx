@@ -18,6 +18,8 @@ const LINKS = {
     { href: '/register',   label: 'Registra tu negocio' },
     { href: '/dashboard',  label: 'Panel de control' },
     { href: '/contact',    label: 'Contacto' },
+    { href: '/terms',      label: 'Términos de uso' },
+    { href: '/privacy',    label: 'Privacidad' },
   ],
 }
 
@@ -48,7 +50,7 @@ export function Footer() {
                 La red comercial local de Santa Cruz de la Sierra. Conectamos emprendedores con su comunidad.
               </p>
 
-              <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary/80 bg-primary/8 px-3 py-1.5 rounded-full border border-primary/15">
+              <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary/80 bg-primary/10 px-3 py-1.5 rounded-full border border-primary/15">
                 <MapPin size={11} />
                 Santa Cruz de la Sierra, Bolivia
               </div>
@@ -67,7 +69,7 @@ export function Footer() {
                     <li key={l.href}>
                       <Link
                         href={l.href}
-                        className="text-sm text-muted-foreground hover:text-foreground transition-colors inline-block hover:translate-x-0.5 transition-transform"
+                        className="text-sm text-muted-foreground hover:text-foreground inline-block hover:translate-x-0.5 transition-[color,transform] duration-200"
                       >
                         {l.label}
                       </Link>

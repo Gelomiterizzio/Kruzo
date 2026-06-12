@@ -4,25 +4,56 @@ service cloud.firestore {
     function isAuth() { return request.auth != null; }
     function isOwner(r) { return isAuth() && (request.auth.uid == r.data.ownerId || request.auth.uid == r.data.userId); }
     function isAdmin() { return isAuth() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'; }
-    function isEntrepreneur() { return isAuth() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['entrepreneur','admin']; }
+    // Keys the writer is NOT allowed to touch (added, removed or modified).
+    function keepsLocked(locked) {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny(locked);
+    }
 
     // Business aggregate counters (favoriteCount, reviewCount, rating,
-    // ratingDistribution) are maintained ONLY by Cloud Functions via the Admin
-    // SDK, which bypasses these rules. Clients can never write them.
+    // ratingDistribution, viewCount) are maintained ONLY by Cloud Functions /
+    // the Admin SDK, which bypass these rules. Clients can never write them.
 
     match /users/{uid} {
       allow read: if true;
-      allow create: if isAuth() && request.auth.uid == uid;
-      allow update: if isAuth() && request.auth.uid == uid || isAdmin();
+      // New accounts are always plain, unbanned, unverified users.
+      allow create: if isAuth() && request.auth.uid == uid
+        && request.resource.data.role == 'user'
+        && request.resource.data.isBanned == false
+        && request.resource.data.isVerified == false;
+      // Users edit their own profile but NEVER their privileges/moderation
+      // flags (role escalation, self-unban and self-verify are blocked).
+      allow update: if isAdmin()
+        || (isAuth() && request.auth.uid == uid
+            && keepsLocked(['role', 'isBanned', 'banReason', 'isVerified', 'reputation'].toSet()));
       allow delete: if isAdmin();
       match /favorites/{fid} { allow read, write: if isAuth() && request.auth.uid == uid; }
-      match /notifications/{nid} { allow read, write: if isAuth() && request.auth.uid == uid; }
+      match /notifications/{nid} {
+        // Created only by Cloud Functions (Admin SDK); the owner reads and
+        // marks them as read / deletes them.
+        allow read, update, delete: if isAuth() && request.auth.uid == uid;
+        allow create: if false;
+      }
     }
 
     match /businesses/{bid} {
       allow read: if true;
-      allow create: if isAuth() && isEntrepreneur() && request.resource.data.ownerId == request.auth.uid;
-      allow update, delete: if isOwner(resource) || isAdmin();
+      // Any signed-in user can register their own business. It is born
+      // 'pending' and unprivileged; admins approve/verify/feature afterwards.
+      allow create: if isAdmin()
+        || (isAuth()
+            && request.resource.data.ownerId == request.auth.uid
+            && request.resource.data.status == 'pending'
+            && request.resource.data.isVerified == false
+            && request.resource.data.isFeatured == false);
+      // Owners manage their content; moderation, identity, aggregate and
+      // recency fields stay locked (no self-approval / self-feature /
+      // counter edits / createdAt forgery).
+      allow update: if isAdmin()
+        || (isOwner(resource)
+            && keepsLocked(['ownerId', 'slug', 'status', 'isVerified', 'isFeatured', 'featuredUntil', 'plan',
+                            'rating', 'reviewCount', 'ratingDistribution', 'viewCount', 'favoriteCount',
+                            'shareCount', 'contactCount', 'createdAt'].toSet()));
+      allow delete: if isOwner(resource) || isAdmin();
       match /reviews/{rid} {
         allow read: if true;
         // One review per user per business: the review id MUST equal the author's uid,
@@ -31,14 +62,36 @@ service cloud.firestore {
           && rid == request.auth.uid
           && request.resource.data.userId == request.auth.uid
           && request.resource.data.rating >= 1 && request.resource.data.rating <= 5;
-        allow update, delete: if isOwner(resource) || isAdmin();
+        // Authors may edit/delete their review (rating/comment) but not its
+        // moderation flags, identity, timestamps or the owner's reply —
+        // otherwise an author could forge a "business owner response" or
+        // impersonate someone else.
+        allow update: if isAdmin()
+          || (isOwner(resource)
+              && keepsLocked(['userId', 'businessId', 'isVerified', 'isHidden', 'reportCount',
+                              'ownerReply', 'ownerRepliedAt', 'userName', 'userPhoto', 'createdAt'].toSet()));
+        allow delete: if isOwner(resource) || isAdmin();
       }
     }
 
     match /posts/{pid} {
       allow read: if true;
-      allow create: if isAuth() && isEntrepreneur() && request.resource.data.ownerId == request.auth.uid;
-      allow update, delete: if isOwner(resource) || isAdmin();
+      // Posting requires owning the target business (checked against the
+      // business doc itself — no role needed).
+      allow create: if isAdmin()
+        || (isAuth()
+            && request.resource.data.ownerId == request.auth.uid
+            && get(/databases/$(database)/documents/businesses/$(request.resource.data.businessId)).data.ownerId == request.auth.uid);
+      // Owners edit their post content and may soft-delete it, but cannot
+      // reactivate a post an admin paused/removed (status may only stay the
+      // same or become 'deleted') nor forge counters/recency.
+      allow update: if isAdmin()
+        || (isOwner(resource)
+            && keepsLocked(['ownerId', 'businessId', 'isFeatured',
+                            'viewCount', 'likeCount', 'commentCount', 'shareCount', 'createdAt'].toSet())
+            && (request.resource.data.status == resource.data.status
+                || request.resource.data.status == 'deleted'));
+      allow delete: if isOwner(resource) || isAdmin();
       match /comments/{cid} {
         allow read: if true;
         allow create: if isAuth();
@@ -48,7 +101,22 @@ service cloud.firestore {
     }
 
     match /categories/{cid} { allow read: if true; allow write: if isAdmin(); }
-    match /reports/{rid} { allow read: if isAdmin(); allow create: if isAuth(); allow update, delete: if isAdmin(); }
+
+    match /reports/{rid} {
+      allow read: if isAdmin();
+      allow create: if isAuth() && request.resource.data.reporterId == request.auth.uid;
+      allow update, delete: if isAdmin();
+    }
+
+    // Public contact form (no sign-in required). Write-only for visitors,
+    // readable/managed only by admins. Sizes are capped to limit abuse.
+    match /contactMessages/{mid} {
+      allow read, update, delete: if isAdmin();
+      allow create: if request.resource.data.name is string && request.resource.data.name.size() >= 2 && request.resource.data.name.size() <= 100
+        && request.resource.data.email is string && request.resource.data.email.size() >= 5 && request.resource.data.email.size() <= 200
+        && request.resource.data.message is string && request.resource.data.message.size() >= 10 && request.resource.data.message.size() <= 2000;
+    }
+
     match /config/{cid} { allow read: if true; allow write: if isAdmin(); }
   }
 }

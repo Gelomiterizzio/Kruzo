@@ -1,15 +1,16 @@
 import {
-  collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc,
+  collection, doc, getDoc, getDocs, addDoc, updateDoc, setDoc,
   query, where, orderBy, limit, startAfter,
   serverTimestamp, type DocumentSnapshot, type QueryConstraint,
-  runTransaction, arrayUnion, arrayRemove, GeoPoint
+  runTransaction, arrayUnion, arrayRemove, writeBatch, getCountFromServer,
 } from 'firebase/firestore'
 import { db } from './config'
 import type { Business, BusinessFormData } from '@/lib/types/business'
 import type { Post, PostFormData } from '@/lib/types/post'
 import type { Review, ReviewFormData } from '@/lib/types/review'
 import type { AppUser } from '@/lib/types/user'
-import { uniqueSlug } from '@/lib/utils/formatters'
+import type { AppNotification } from '@/lib/types/notification'
+import { uniqueSlug, normalizeText } from '@/lib/utils/formatters'
 
 // ─── HELPERS ────────────────────────────────────────────────────────────────
 
@@ -76,6 +77,12 @@ export async function createBusiness(ownerId: string, ownerName: string, data: B
     city: 'Santa Cruz de la Sierra',
     createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
   })
+  // Link the business to its owner right away so the dashboard finds it on the
+  // very next read. The onBusinessCreated Cloud Function repeats this server-
+  // side (idempotent arrayUnion) and also promotes the user to entrepreneur.
+  try {
+    await updateDoc(doc(db, 'users', ownerId), { businessIds: arrayUnion(ref.id) })
+  } catch { /* non-fatal: the Cloud Function performs the same link */ }
   return ref.id
 }
 
@@ -124,6 +131,7 @@ export async function createPost(ownerId: string, businessId: string, businessNa
     ...data,
     ownerId, businessId, businessName, businessSlug, businessLogo, whatsapp,
     tags: data.tags.split(',').map(t => t.trim()).filter(Boolean),
+    deliveryZones: data.deliveryZones.split(',').map(t => t.trim()).filter(Boolean),
     currency: 'BOB', images: [],
     viewCount: 0, likeCount: 0, commentCount: 0, shareCount: 0,
     status: 'active', isFeatured: false,
@@ -173,6 +181,85 @@ export async function createReview(
   })
 }
 
+// ─── SEARCH ─────────────────────────────────────────────────────────────────
+// Firestore has no full-text search, so /search fetches one capped batch with
+// the already-indexed filters and matches/sorts client-side. Accent- and
+// case-insensitive; good for a local directory's scale. The fetch reuses the
+// composite indexes that /explore already needs (status+zone/category+
+// isFeatured+createdAt), so no new indexes are required.
+
+export type SearchSort = 'recent' | 'rating' | 'popular' | 'featured'
+
+const SEARCH_FETCH_LIMIT = 100
+
+function matchesQuery(fields: (string | string[] | undefined)[], q: string): boolean {
+  const needle = normalizeText(q)
+  return fields.some((f) => !!f && normalizeText(Array.isArray(f) ? f.join(' ') : f).includes(needle))
+}
+
+const millis = (t: unknown) => (t as { toMillis?: () => number } | null)?.toMillis?.() ?? 0
+
+export async function searchBusinesses(opts: {
+  q?: string; category?: string; zone?: string; sort?: SearchSort
+}): Promise<Business[]> {
+  const { q, category, zone, sort = 'featured' } = opts
+  const constraints: QueryConstraint[] = [
+    where('status', '==', 'active'),
+    orderBy('isFeatured', 'desc'),
+    orderBy('createdAt', 'desc'),
+    limit(SEARCH_FETCH_LIMIT),
+  ]
+  if (category) constraints.push(where('category', 'array-contains', category))
+  if (zone) constraints.push(where('zone', '==', zone))
+
+  const snap = await getDocs(query(collection(db, 'businesses'), ...constraints))
+  let results = snap.docs.map(d => ({ id: d.id, ...d.data() } as Business))
+
+  if (q?.trim()) {
+    results = results.filter(b =>
+      matchesQuery([b.name, b.tagline, b.description, b.tags, b.zone, b.category], q))
+  }
+
+  switch (sort) {
+    case 'rating':
+      results = [...results].sort((a, b) => b.rating - a.rating || b.reviewCount - a.reviewCount)
+      break
+    case 'popular':
+      results = [...results].sort((a, b) => b.viewCount - a.viewCount)
+      break
+    case 'recent':
+      results = [...results].sort((a, b) => millis(b.createdAt) - millis(a.createdAt))
+      break
+    // 'featured' keeps the query order (isFeatured desc, createdAt desc)
+  }
+  return results
+}
+
+export async function searchPosts(opts: {
+  q?: string; category?: string; sort?: SearchSort
+}): Promise<Post[]> {
+  const { q, category, sort = 'recent' } = opts
+  const constraints: QueryConstraint[] = [
+    where('status', '==', 'active'),
+    orderBy('createdAt', 'desc'),
+    limit(SEARCH_FETCH_LIMIT),
+  ]
+  if (category) constraints.push(where('category', '==', category))
+
+  const snap = await getDocs(query(collection(db, 'posts'), ...constraints))
+  let results = snap.docs.map(d => ({ id: d.id, ...d.data() } as Post))
+
+  if (q?.trim()) {
+    results = results.filter(p =>
+      matchesQuery([p.title, p.description, p.tags, p.businessName], q))
+  }
+
+  if (sort === 'popular') {
+    results = [...results].sort((a, b) => b.viewCount - a.viewCount)
+  }
+  return results
+}
+
 // ─── FAVORITES ──────────────────────────────────────────────────────────────
 
 export async function toggleFavorite(userId: string, businessId: string, isFav: boolean) {
@@ -180,5 +267,62 @@ export async function toggleFavorite(userId: string, businessId: string, isFav: 
   // Cloud Function keeps each business's favoriteCount in sync from the diff.
   await updateDoc(doc(db, 'users', userId), {
     favoriteIds: isFav ? arrayRemove(businessId) : arrayUnion(businessId),
+  })
+}
+
+// ─── NOTIFICATIONS ──────────────────────────────────────────────────────────
+// Real in-app notifications: documents are created by Cloud Functions under
+// users/{uid}/notifications; the client reads them and marks them as read.
+
+export async function getNotifications(userId: string, pageSize = 50): Promise<AppNotification[]> {
+  const snap = await getDocs(query(
+    collection(db, 'users', userId, 'notifications'),
+    orderBy('createdAt', 'desc'),
+    limit(pageSize),
+  ))
+  return snap.docs.map(d => ({ id: d.id, ...d.data() } as AppNotification))
+}
+
+export async function getUnreadNotificationsCount(userId: string): Promise<number> {
+  const snap = await getCountFromServer(query(
+    collection(db, 'users', userId, 'notifications'),
+    where('read', '==', false),
+  ))
+  return snap.data().count
+}
+
+export async function markAllNotificationsRead(userId: string, notifications: AppNotification[]) {
+  const unread = notifications.filter(n => !n.read)
+  if (!unread.length) return
+  const batch = writeBatch(db)
+  unread.forEach(n => batch.update(doc(db, 'users', userId, 'notifications', n.id), { read: true }))
+  await batch.commit()
+}
+
+// ─── REPORTS ────────────────────────────────────────────────────────────────
+
+/**
+ * Reports a review. The doc id is derived from reviewer+reporter so the same
+ * person can't spam-report the same review (the second create is denied).
+ */
+export async function reportReview(businessId: string, reviewId: string, reporterId: string) {
+  const ref = doc(db, 'reports', `review_${businessId}_${reviewId}_${reporterId}`)
+  await setDoc(ref, {
+    type: 'review',
+    businessId,
+    reviewId,
+    reporterId,
+    status: 'pending',
+    createdAt: serverTimestamp(),
+  })
+}
+
+// ─── CONTACT ────────────────────────────────────────────────────────────────
+
+export async function sendContactMessage(data: { name: string; email: string; message: string }) {
+  await addDoc(collection(db, 'contactMessages'), {
+    ...data,
+    status: 'new',
+    createdAt: serverTimestamp(),
   })
 }

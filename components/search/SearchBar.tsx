@@ -23,7 +23,12 @@ export function SearchBar({ size = 'lg', className, placeholder = 'Buscar negoci
   }
 
   return (
-    <div className={cn('relative', className)}>
+    <div
+      className={cn('relative', className)}
+      // Close the suggestions only when focus truly leaves the widget, so the
+      // popular-search buttons stay reachable by keyboard (no blur-timeout hack).
+      onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setFocused(false) }}
+    >
       <div className={cn(
         'flex items-center gap-2 bg-card border border-border rounded-2xl transition-all',
         size === 'lg' ? 'px-4 py-3' : 'px-3 py-2',
@@ -34,13 +39,15 @@ export function SearchBar({ size = 'lg', className, placeholder = 'Buscar negoci
           value={query}
           onChange={e => setQuery(e.target.value)}
           onFocus={() => setFocused(true)}
-          onBlur={() => setTimeout(() => setFocused(false), 150)}
           onKeyDown={e => e.key === 'Enter' && handleSearch(query)}
           placeholder={placeholder}
+          aria-label="Buscar negocios, servicios o productos"
           className={cn('flex-1 bg-transparent outline-none placeholder:text-muted-foreground', size === 'lg' ? 'text-base' : 'text-sm')}
         />
         {query && (
-          <button onClick={() => setQuery('')}><X size={16} className="text-muted-foreground hover:text-foreground" /></button>
+          <button type="button" onClick={() => setQuery('')} aria-label="Limpiar búsqueda">
+            <X size={16} className="text-muted-foreground hover:text-foreground" />
+          </button>
         )}
         {size === 'lg' && (
           <button onClick={() => handleSearch(query)}

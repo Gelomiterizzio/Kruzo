@@ -1,10 +1,12 @@
 'use client'
 import { useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Loader2, Save, MapPin } from 'lucide-react'
 import { businessSchema, type BusinessFormValues } from '@/lib/utils/validators'
 import { ImageUpload } from '@/components/shared/ImageUpload'
+import { Switch } from '@/components/ui/Switch'
 import { uploadBusinessImages } from '@/lib/firebase/storage'
 import { createBusiness, updateBusiness } from '@/lib/firebase/firestore'
 import { useAuth } from '@/lib/hooks/useAuth'
@@ -15,9 +17,22 @@ import { BUSINESS_CATEGORIES, SCZ_ZONES } from '@/lib/utils/constants'
 
 interface Props { existing?: Business }
 
+// Hoisted out of the component: defining it inline gives it a new identity on
+// every render, which remounts the subtree and makes inputs drop focus.
+const Field = ({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) => (
+  <div>
+    <label className="block text-sm font-medium mb-1.5">{label}</label>
+    {children}
+    {error && <p className="text-xs text-destructive mt-1">{error}</p>}
+  </div>
+)
+
+const inputCls = 'w-full px-3 py-2.5 text-sm bg-muted border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all'
+
 export function BusinessForm({ existing }: Props) {
   const router = useRouter()
-  const { user } = useAuth()
+  const queryClient = useQueryClient()
+  const { user, refreshUser } = useAuth()
   const [loading, setLoading] = useState(false)
   const [logoFiles, setLogoFiles] = useState<File[]>([])
   const [coverFiles, setCoverFiles] = useState<File[]>([])
@@ -56,44 +71,39 @@ export function BusinessForm({ existing }: Props) {
         await updateBusiness(businessId, {
           ...data,
           tags: data.tags.split(',').map(t => t.trim()).filter(Boolean),
-        } as any)
+        } as Partial<Business>)
         toast.success('Negocio actualizado correctamente')
       }
 
       if (logoFiles.length && businessId) {
         setUploadProgress(10)
         const [logoUrl] = await uploadBusinessImages(businessId, user.id, logoFiles, 'logo', p => setUploadProgress(10 + p * 0.3))
-        await updateBusiness(businessId, { logo: logoUrl } as any)
+        await updateBusiness(businessId, { logo: logoUrl })
       }
       if (coverFiles.length && businessId) {
         setUploadProgress(40)
         const [coverUrl] = await uploadBusinessImages(businessId, user.id, coverFiles, 'cover', p => setUploadProgress(40 + p * 0.3))
-        await updateBusiness(businessId, { coverImage: coverUrl } as any)
+        await updateBusiness(businessId, { coverImage: coverUrl })
       }
       if (galleryFiles.length && businessId) {
         setUploadProgress(70)
         const urls = await uploadBusinessImages(businessId, user.id, galleryFiles, 'gallery', p => setUploadProgress(70 + p * 0.3))
-        await updateBusiness(businessId, { images: urls } as any)
+        await updateBusiness(businessId, { images: urls })
       }
 
+      // Pick up the fresh businessIds link (and async role promotion) so the
+      // dashboard immediately recognises the new business.
+      await refreshUser()
+      queryClient.invalidateQueries({ queryKey: ['business'] })
+      queryClient.invalidateQueries({ queryKey: ['businesses'] })
       router.push('/dashboard/business')
-    } catch (e) {
+    } catch {
       toast.error('Error al guardar negocio. Inténtalo de nuevo.')
     } finally {
       setLoading(false)
       setUploadProgress(0)
     }
   }
-
-  const Field = ({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) => (
-    <div>
-      <label className="block text-sm font-medium mb-1.5">{label}</label>
-      {children}
-      {error && <p className="text-xs text-destructive mt-1">{error}</p>}
-    </div>
-  )
-
-  const inputCls = 'w-full px-3 py-2.5 text-sm bg-muted border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all'
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 max-w-2xl">
@@ -180,18 +190,15 @@ export function BusinessForm({ existing }: Props) {
           { field: 'hasOnlinePayment' as const, label: '💳 Pagos en línea', desc: 'Transferencias, tarjetas' },
           { field: 'acceptsQR' as const, label: '📱 Acepta QR', desc: 'Tigo Money, Simple' },
         ].map(({ field, label, desc }) => (
-          <label key={field} className="flex items-center justify-between p-3 bg-muted rounded-xl cursor-pointer hover:bg-accent transition-colors">
+          <div key={field} className="flex items-center justify-between gap-3 p-3 bg-muted rounded-xl">
             <div>
               <p className="text-sm font-medium">{label}</p>
               <p className="text-xs text-muted-foreground">{desc}</p>
             </div>
             <Controller name={field} control={control} render={({ field: f }) => (
-              <div onClick={() => f.onChange(!f.value)}
-                className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer ${f.value ? 'bg-primary' : 'bg-muted-foreground/30'}`}>
-                <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${f.value ? 'translate-x-5' : 'translate-x-0.5'}`} />
-              </div>
+              <Switch checked={!!f.value} onChange={f.onChange} label={label.replace(/^\S+\s/, '')} />
             )} />
-          </label>
+          </div>
         ))}
       </div>
 

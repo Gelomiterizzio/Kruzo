@@ -1,7 +1,14 @@
 import Link from 'next/link'
 import type { Metadata } from 'next'
+import { CheckCircle2 } from 'lucide-react'
 
-export const metadata: Metadata = { title: 'Acceso | KRUZO' }
+export const metadata: Metadata = { title: 'Acceso' }
+
+const VALUE_PROPS = [
+  'Registro y publicación gratis',
+  'Contacto directo por WhatsApp, sin intermediarios',
+  'Tu negocio visible en Google con SEO local',
+]
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -17,11 +24,13 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             Tu Ciudad.<br/>Tu Mercado.<br/>Tu Negocio.
           </div>
           <p className="text-white/70 text-lg">La plataforma comercial local de Santa Cruz de la Sierra, Bolivia.</p>
-          <div className="flex gap-6 text-sm text-white/60 pt-4">
-            <div><div className="text-xl font-bold text-white">500+</div><div>Negocios</div></div>
-            <div><div className="text-xl font-bold text-white">10k+</div><div>Usuarios</div></div>
-            <div><div className="text-xl font-bold text-white">50+</div><div>Categorías</div></div>
-          </div>
+          <ul className="space-y-2.5 pt-4">
+            {VALUE_PROPS.map((v) => (
+              <li key={v} className="flex items-center gap-2.5 text-sm text-white/80">
+                <CheckCircle2 size={16} className="text-white/60 shrink-0" /> {v}
+              </li>
+            ))}
+          </ul>
         </div>
         <p className="text-white/40 text-sm">© {new Date().getFullYear()} KRUZO</p>
       </div>

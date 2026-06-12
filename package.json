@@ -9,7 +9,8 @@
     "lint": "eslint .",
     "type-check": "tsc --noEmit",
     "firebase:emulate": "firebase emulators:start",
-    "firebase:deploy-rules": "firebase deploy --only firestore:rules,firestore:indexes"
+    "firebase:deploy-rules": "firebase deploy --only firestore:rules,firestore:indexes",
+    "test:rules": "firebase emulators:exec --only firestore --project demo-kruzo-rules \"node scripts/test-rules.mjs\""
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
@@ -32,7 +33,6 @@
     "react-dropzone": "^14.2.3",
     "react-hook-form": "^7.52.2",
     "react-intersection-observer": "^9.13.0",
-    "recharts": "^2.12.7",
     "sharp": "^0.33.5",
     "sonner": "^2.0.0",
     "tailwind-merge": "^2.4.0",
@@ -42,6 +42,7 @@
     "zustand": "^5.0.0"
   },
   "devDependencies": {
+    "@firebase/rules-unit-testing": "^4.0.1",
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",

@@ -1,7 +1,9 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
+import { headers } from 'next/headers'
 import { doc, getDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase/config'
+import { incrementPostView } from '@/lib/firebase/admin'
 import type { Post } from '@/lib/types/post'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -16,10 +18,10 @@ interface Props { params: Promise<{ id: string }> }
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params
   const snap = await getDoc(doc(db, 'posts', id))
-  if (!snap.exists()) return { title: 'Publicación no encontrada | KRUZO' }
+  if (!snap.exists()) return { title: 'Publicación no encontrada' }
   const post = snap.data() as Post
   return {
-    title: `${post.title} | KRUZO`,
+    title: post.title,
     description: post.description,
     openGraph: { images: post.images[0] ? [post.images[0]] : [] },
   }
@@ -30,7 +32,13 @@ export default async function PostPage({ params }: Props) {
   const snap = await getDoc(doc(db, 'posts', id))
   if (!snap.exists()) notFound()
   const post = { id: snap.id, ...snap.data() } as Post
-  if (post.status === 'deleted') notFound()
+  if (post.status === 'deleted' || post.status === 'paused') notFound()
+
+  // Real per-post views (skipped for link prefetches to keep stats honest).
+  const h = await headers()
+  if (h.get('next-router-prefetch') === null) {
+    incrementPostView(post.id).catch(() => {})
+  }
 
   return (
     <div className="container max-w-3xl pt-20 pb-16 space-y-6">

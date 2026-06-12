@@ -1,5 +1,4 @@
 'use client'
-import { useRef, useCallback } from 'react'
 import { useInView } from 'react-intersection-observer'
 import { BusinessCard } from './BusinessCard'
 import { GridSkeleton } from '@/components/shared/SkeletonCard'

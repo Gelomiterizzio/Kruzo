@@ -3,10 +3,9 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard, Store, FileText, BarChart3, Star,
-  Settings, Plus, Shield, Users, LayoutGrid, Flag
+  Settings, Plus, Users, LayoutGrid, Flag
 } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
-import { useAuth } from '@/lib/hooks/useAuth'
 
 const DASHBOARD_LINKS = [
   { href: '/dashboard',            label: 'Resumen',        icon: LayoutDashboard, exact: true },

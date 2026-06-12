@@ -1,5 +1,5 @@
 'use client'
-import { useState, useCallback } from 'react'
+import { useEffect, useMemo, useCallback } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { X, Upload, ImagePlus } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
@@ -9,19 +9,23 @@ interface ImageUploadProps {
   onChange: (files: File[]) => void
   maxFiles?: number
   maxSizeMB?: number
+  /** Existing remote image URLs — shown until new files are selected. */
   preview?: string[]
   className?: string
   label?: string
 }
 
 export function ImageUpload({ value, onChange, maxFiles = 5, maxSizeMB = 5, preview = [], className, label }: ImageUploadProps) {
-  const [previews, setPreviews] = useState<string[]>(preview)
+  // Previews derive 1:1 from the selected files, so remove-by-index always
+  // stays aligned. Object URLs are revoked when files change/unmount.
+  const filePreviews = useMemo(() => value.map(f => URL.createObjectURL(f)), [value])
+  useEffect(() => () => { filePreviews.forEach(u => URL.revokeObjectURL(u)) }, [filePreviews])
+
+  const showingExisting = value.length === 0 && preview.length > 0
+  const shown = showingExisting ? preview : filePreviews
 
   const onDrop = useCallback((accepted: File[]) => {
-    const newFiles = [...value, ...accepted].slice(0, maxFiles)
-    onChange(newFiles)
-    const newPreviews = newFiles.map(f => URL.createObjectURL(f))
-    setPreviews(newPreviews)
+    onChange([...value, ...accepted].slice(0, maxFiles))
   }, [value, onChange, maxFiles])
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -31,11 +35,7 @@ export function ImageUpload({ value, onChange, maxFiles = 5, maxSizeMB = 5, prev
     maxSize: maxSizeMB * 1024 * 1024,
   })
 
-  const removeFile = (idx: number) => {
-    const newFiles = value.filter((_, i) => i !== idx)
-    onChange(newFiles)
-    setPreviews(prev => prev.filter((_, i) => i !== idx))
-  }
+  const removeFile = (idx: number) => onChange(value.filter((_, i) => i !== idx))
 
   return (
     <div className={cn('space-y-3', className)}>
@@ -53,20 +53,26 @@ export function ImageUpload({ value, onChange, maxFiles = 5, maxSizeMB = 5, prev
         <p className="text-xs text-muted-foreground mt-1">
           JPG, PNG, WEBP · Máx. {maxSizeMB}MB · Hasta {maxFiles} imágenes
         </p>
+        {showingExisting && (
+          <p className="text-xs text-muted-foreground mt-1">Selecciona nuevas imágenes para reemplazar las actuales</p>
+        )}
       </div>
-      {previews.length > 0 && (
+      {shown.length > 0 && (
         <div className="grid grid-cols-3 gap-2">
-          {previews.map((src, i) => (
-            <div key={i} className="relative aspect-square rounded-xl overflow-hidden group">
+          {shown.map((src, i) => (
+            <div key={`${src.slice(-24)}-${i}`} className="relative aspect-square rounded-xl overflow-hidden group">
+              {/* eslint-disable-next-line @next/next/no-img-element -- blob/object URLs aren't supported by next/image */}
               <img src={src} alt="" className="w-full h-full object-cover" />
-              <button onClick={() => removeFile(i)}
-                className="absolute top-1 right-1 p-1 bg-black/60 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
-                <X size={12} />
-              </button>
+              {!showingExisting && (
+                <button type="button" onClick={() => removeFile(i)} aria-label="Quitar imagen"
+                  className="absolute top-1 right-1 p-1 bg-black/60 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                  <X size={12} />
+                </button>
+              )}
               {i === 0 && <span className="absolute bottom-1 left-1 text-xs bg-black/60 text-white px-1.5 py-0.5 rounded">Principal</span>}
             </div>
           ))}
-          {previews.length < maxFiles && (
+          {!showingExisting && value.length < maxFiles && (
             <div {...getRootProps()} className="aspect-square rounded-xl border-2 border-dashed border-border flex items-center justify-center cursor-pointer hover:border-primary/50 transition-colors">
               <ImagePlus size={24} className="text-muted-foreground" />
             </div>

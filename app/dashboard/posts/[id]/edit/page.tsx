@@ -1,6 +1,6 @@
 'use client'
-import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
+import { useQuery } from '@tanstack/react-query'
 import { doc, getDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase/config'
 import { useAuth } from '@/lib/hooks/useAuth'
@@ -9,33 +9,30 @@ import { PostForm } from '@/components/post/PostForm'
 import { ArrowLeft, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import type { Post } from '@/lib/types/post'
-import type { Business } from '@/lib/types/business'
 
 export default function EditPostPage() {
   const { id } = useParams<{ id: string }>()
   const { user } = useAuth()
-  const [post, setPost] = useState<Post | null>(null)
-  const [business, setBusiness] = useState<Business | null>(null)
-  const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    const load = async () => {
-      if (!id || !user) return
-      const [postSnap] = await Promise.all([getDoc(doc(db, 'posts', id))])
-      if (postSnap.exists()) {
-        const p = { id: postSnap.id, ...postSnap.data() } as Post
-        if (p.ownerId !== user.id) { setLoading(false); return }
-        setPost(p)
-        const biz = await getBusinessById(p.businessId)
-        setBusiness(biz)
-      }
-      setLoading(false)
-    }
-    load()
-  }, [id, user])
+  const { data, isLoading } = useQuery({
+    queryKey: ['edit-post', id, user?.id],
+    enabled: !!id && !!user,
+    queryFn: async () => {
+      const snap = await getDoc(doc(db, 'posts', id))
+      if (!snap.exists()) return null
+      const post = { id: snap.id, ...snap.data() } as Post
+      if (post.ownerId !== user!.id) return null
+      const business = await getBusinessById(post.businessId)
+      return business ? { post, business } : null
+    },
+  })
 
-  if (loading) return <div className="flex items-center justify-center py-20"><Loader2 size={28} className="animate-spin text-muted-foreground" /></div>
-  if (!post || !business) return <div className="text-center py-20 text-muted-foreground">Publicación no encontrada</div>
+  if (isLoading || !user) {
+    return <div className="flex items-center justify-center py-20"><Loader2 size={28} className="animate-spin text-muted-foreground" /></div>
+  }
+  if (!data) {
+    return <div className="text-center py-20 text-muted-foreground">Publicación no encontrada</div>
+  }
 
   return (
     <div className="space-y-5">
@@ -45,7 +42,7 @@ export default function EditPostPage() {
         </Link>
         <h1 className="text-2xl font-display font-bold">Editar publicación</h1>
       </div>
-      <PostForm business={business} existing={post} />
+      <PostForm business={data.business} existing={data.post} />
     </div>
   )
 }

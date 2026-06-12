@@ -1,8 +1,9 @@
-import { formatDistanceToNow, format } from 'date-fns'
+﻿import { formatDistanceToNow, format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import type { Timestamp } from 'firebase/firestore'
+import type { BusinessSchedule } from '@/lib/types/business'
 
-export function formatPrice(price: number, currency = 'BOB'): string {
+export function formatPrice(price: number): string {
   if (price === 0) return 'Gratis'
   return `Bs. ${price.toLocaleString('es-BO', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`
 }
@@ -23,6 +24,11 @@ export function formatNumber(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
   if (n >= 1_000) return `${(n / 1_000).toFixed(1)}k`
   return n.toString()
+}
+
+/** Lowercases and strips accents — for tolerant text matching in search. */
+export function normalizeText(text: string): string {
+  return text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
 }
 
 export function slugify(text: string): string {
@@ -60,13 +66,17 @@ export function getInitials(name: string): string {
   return name.split(' ').slice(0, 2).map(w => w[0]?.toUpperCase()).join('')
 }
 
-export function isOpenNow(hours: Record<string, { open: string; close: string } | null>): boolean {
+export function isOpenNow(hours: BusinessSchedule): boolean {
   const now = new Date()
-  const day = ['sun','mon','tue','wed','thu','fri','sat'][now.getDay()]
-  const h = hours[day]
-  if (!h) return false
+  const day = (['sun','mon','tue','wed','thu','fri','sat'] as const)[now.getDay()]
+  const h = hours?.[day]
+  if (!h?.open || !h?.close) return false
   const cur = now.getHours() * 60 + now.getMinutes()
   const [oh, om] = h.open.split(':').map(Number)
   const [ch, cm] = h.close.split(':').map(Number)
-  return cur >= oh * 60 + om && cur <= ch * 60 + cm
+  const opens = oh * 60 + om
+  const closes = ch * 60 + cm
+  // Overnight schedules (e.g. 18:00–02:00) wrap past midnight.
+  if (closes < opens) return cur >= opens || cur <= closes
+  return cur >= opens && cur <= closes
 }

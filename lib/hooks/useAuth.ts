@@ -21,7 +21,7 @@ function parseFirebaseError(error: unknown): string {
 }
 
 export function useAuth() {
-  const { firebaseUser, appUser: user, loading } = useAuthContext()
+  const { firebaseUser, appUser: user, loading, refreshUser } = useAuthContext()
   const [error, setError] = useState<string | null>(null)
 
   const clearError = () => setError(null)
@@ -78,8 +78,12 @@ export function useAuth() {
     loading,
     error,
     clearError,
+    refreshUser,
     isAuthenticated: !!firebaseUser,
-    isEntrepreneur: user?.role === 'entrepreneur' || user?.role === 'admin',
+    // Owning a business counts as entrepreneur even if the role promotion
+    // (done async by a Cloud Function) hasn't landed in this session yet.
+    isEntrepreneur:
+      user?.role === 'entrepreneur' || user?.role === 'admin' || (user?.businessIds?.length ?? 0) > 0,
     isAdmin: user?.role === 'admin',
     loginGoogle,
     loginEmail,

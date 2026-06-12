@@ -25,21 +25,39 @@ export const businessSchema = z.object({
   acceptsQR: z.boolean().default(false),
 })
 
+// Numeric <input type="number"> + valueAsNumber yields NaN when empty; treat
+// that as "not provided" instead of failing validation on optional fields.
+const optionalPrice = z.preprocess(
+  (v) => (typeof v === 'number' && Number.isNaN(v) ? undefined : v),
+  z.number().min(0, 'Precio inválido').max(1_000_000).optional(),
+)
+
 export const postSchema = z.object({
   title: z.string().min(3, 'Mínimo 3 caracteres').max(100),
   description: z.string().min(10).max(800),
-  price: z.number().min(0, 'Precio inválido').max(1_000_000),
+  price: optionalPrice,
   priceType: z.enum(['fixed', 'negotiable', 'free', 'consult']),
-  originalPrice: z.number().optional(),
+  originalPrice: optionalPrice,
   category: z.string().min(1, 'Selecciona una categoría'),
   subcategory: z.string().optional().default(''),
   tags: z.string().optional().default(''),
   inStock: z.boolean().default(true),
-  stockCount: z.number().optional(),
+  stockCount: z.preprocess(
+    (v) => (typeof v === 'number' && Number.isNaN(v) ? undefined : v),
+    z.number().min(0).optional(),
+  ),
   hasDelivery: z.boolean().default(false),
   deliveryZones: z.string().optional().default(''),
-  deliveryPrice: z.number().min(0).default(0),
+  deliveryPrice: z.preprocess(
+    (v) => (typeof v === 'number' && Number.isNaN(v) ? 0 : v),
+    z.number().min(0).default(0),
+  ),
   whatsappMessage: z.string().max(200).optional().default(''),
+}).superRefine((d, ctx) => {
+  // A concrete price is only required when the type actually uses one.
+  if ((d.priceType === 'fixed' || d.priceType === 'negotiable') && d.price === undefined) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['price'], message: 'Ingresa el precio' })
+  }
 })
 
 export const reviewSchema = z.object({
