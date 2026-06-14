@@ -17,5 +17,7 @@
     {"collectionGroup":"reviews","queryScope":"COLLECTION_GROUP","fields":[{"fieldPath":"businessId","order":"ASCENDING"},{"fieldPath":"createdAt","order":"DESCENDING"}]},
     {"collectionGroup":"reviews","queryScope":"COLLECTION","fields":[{"fieldPath":"isHidden","order":"ASCENDING"},{"fieldPath":"createdAt","order":"DESCENDING"}]}
   ],
-  "fieldOverrides": []
+  "fieldOverrides": [
+    {"collectionGroup":"reviews","fieldPath":"userId","indexes":[{"queryScope":"COLLECTION_GROUP","order":"ASCENDING"}]}
+  ]
 }

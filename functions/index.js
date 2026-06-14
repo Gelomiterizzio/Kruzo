@@ -17,6 +17,7 @@
 const { onDocumentWritten } = require('firebase-functions/v2/firestore')
 const { onCall, HttpsError } = require('firebase-functions/v2/https')
 const { setGlobalOptions } = require('firebase-functions/v2')
+const logger = require('firebase-functions/logger')
 const { initializeApp } = require('firebase-admin/app')
 const { getFirestore, FieldValue } = require('firebase-admin/firestore')
 const { getAuth } = require('firebase-admin/auth')
@@ -129,30 +130,53 @@ exports.deleteAccount = onCall(async (request) => {
   const uid = request.auth && request.auth.uid
   if (!uid) throw new HttpsError('unauthenticated', 'Debes iniciar sesión para eliminar tu cuenta.')
 
+  // Each cleanup step is ISOLATED in its own try/catch: a per-resource failure
+  // (e.g. a missing index, a transient error) must never abort the whole flow and
+  // leave the Auth account behind — deleting the account is what the user relies on.
+
   // 1. Businesses owned by the user — recursiveDelete also clears their reviews
   //    and any other subcollections.
-  const businesses = await db.collection('businesses').where('ownerId', '==', uid).get()
-  for (const biz of businesses.docs) {
-    await db.recursiveDelete(biz.ref).catch(() => {})
+  try {
+    const businesses = await db.collection('businesses').where('ownerId', '==', uid).get()
+    for (const biz of businesses.docs) {
+      await db.recursiveDelete(biz.ref).catch(() => {})
+    }
+  } catch (e) {
+    logger.warn('deleteAccount: businesses cleanup failed', { uid, error: String(e) })
   }
 
   // 2. Posts owned by the user.
-  const posts = await db.collection('posts').where('ownerId', '==', uid).get()
-  await Promise.all(posts.docs.map((d) => d.ref.delete().catch(() => {})))
+  try {
+    const posts = await db.collection('posts').where('ownerId', '==', uid).get()
+    await Promise.all(posts.docs.map((d) => d.ref.delete().catch(() => {})))
+  } catch (e) {
+    logger.warn('deleteAccount: posts cleanup failed', { uid, error: String(e) })
+  }
 
   // 3. Reviews the user authored on OTHER businesses (own-business reviews went
-  //    with step 1). Deleting them retriggers onReviewWritten → aggregates stay
-  //    correct.
-  const reviews = await db.collectionGroup('reviews').where('userId', '==', uid).get()
-  await Promise.all(reviews.docs.map((d) => d.ref.delete().catch(() => {})))
+  //    with step 1). Needs the reviews.userId COLLECTION_GROUP index
+  //    (firestore.indexes.json). Deleting them retriggers onReviewWritten →
+  //    aggregates stay correct.
+  try {
+    const reviews = await db.collectionGroup('reviews').where('userId', '==', uid).get()
+    await Promise.all(reviews.docs.map((d) => d.ref.delete().catch(() => {})))
+  } catch (e) {
+    logger.warn('deleteAccount: reviews cleanup failed', { uid, error: String(e) })
+  }
 
   // 4. The user document + its subcollections (notifications, …). Clearing the
   //    doc also lets onUserFavoritesWritten decrement favoriteCount on businesses
   //    the user had favorited.
   await db.recursiveDelete(db.doc(`users/${uid}`)).catch(() => {})
 
-  // 5. Finally the Auth account itself.
-  await getAuth().deleteUser(uid)
+  // 5. Finally the Auth account itself — the critical step. If THIS fails the user
+  //    must know their account was not removed, so surface a clean error.
+  try {
+    await getAuth().deleteUser(uid)
+  } catch (e) {
+    logger.error('deleteAccount: auth deletion failed', { uid, error: String(e) })
+    throw new HttpsError('internal', 'No se pudo eliminar la cuenta. Inténtalo de nuevo.')
+  }
 
   return { ok: true }
 })
