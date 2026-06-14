@@ -8,13 +8,18 @@
  *   • onUserFavoritesWritten → favoriteCount
  *   • onBusinessWritten      → links businessIds to the owner, promotes them
  *                              to entrepreneur, notifies on approval
+ *   • deleteAccount (callable)→ Play/Apple-compliant self-deletion: removes the
+ *                              Auth account + user doc, owned businesses/posts and
+ *                              authored reviews (privileged Admin-SDK cleanup)
  *
  * Deploy with:  firebase deploy --only functions   (requires the Blaze plan)
  */
 const { onDocumentWritten } = require('firebase-functions/v2/firestore')
+const { onCall, HttpsError } = require('firebase-functions/v2/https')
 const { setGlobalOptions } = require('firebase-functions/v2')
 const { initializeApp } = require('firebase-admin/app')
 const { getFirestore, FieldValue } = require('firebase-admin/firestore')
+const { getAuth } = require('firebase-admin/auth')
 const { applyReviewDelta, visibleRating } = require('./lib/aggregate')
 
 initializeApp()
@@ -114,4 +119,40 @@ exports.onBusinessWritten = onDocumentWritten('businesses/{businessId}', async (
       businessId: event.params.businessId,
     })
   }
+})
+
+// Account self-deletion (Play Store / Apple policy). The Firestore rules forbid a
+// user from deleting their own users/{uid} doc, so the privileged cleanup runs
+// here with the Admin SDK. Idempotent and best-effort per resource so a partial
+// failure still removes the Auth account (the part the user actually cares about).
+exports.deleteAccount = onCall(async (request) => {
+  const uid = request.auth && request.auth.uid
+  if (!uid) throw new HttpsError('unauthenticated', 'Debes iniciar sesión para eliminar tu cuenta.')
+
+  // 1. Businesses owned by the user — recursiveDelete also clears their reviews
+  //    and any other subcollections.
+  const businesses = await db.collection('businesses').where('ownerId', '==', uid).get()
+  for (const biz of businesses.docs) {
+    await db.recursiveDelete(biz.ref).catch(() => {})
+  }
+
+  // 2. Posts owned by the user.
+  const posts = await db.collection('posts').where('ownerId', '==', uid).get()
+  await Promise.all(posts.docs.map((d) => d.ref.delete().catch(() => {})))
+
+  // 3. Reviews the user authored on OTHER businesses (own-business reviews went
+  //    with step 1). Deleting them retriggers onReviewWritten → aggregates stay
+  //    correct.
+  const reviews = await db.collectionGroup('reviews').where('userId', '==', uid).get()
+  await Promise.all(reviews.docs.map((d) => d.ref.delete().catch(() => {})))
+
+  // 4. The user document + its subcollections (notifications, …). Clearing the
+  //    doc also lets onUserFavoritesWritten decrement favoriteCount on businesses
+  //    the user had favorited.
+  await db.recursiveDelete(db.doc(`users/${uid}`)).catch(() => {})
+
+  // 5. Finally the Auth account itself.
+  await getAuth().deleteUser(uid)
+
+  return { ok: true }
 })
