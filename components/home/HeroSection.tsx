@@ -17,10 +17,10 @@ export function HeroSection({ stats }: HeroProps) {
   // Only real numbers: live counts when available + truly static facts.
   const STATS = [
     ...(stats && stats.activeBusinesses > 0
-      ? [{ icon: Store, value: formatNumber(stats.activeBusinesses), label: 'Negocios' }]
+      ? [{ icon: Store, value: formatNumber(stats.activeBusinesses), label: stats.activeBusinesses === 1 ? 'Negocio' : 'Negocios' }]
       : []),
     ...(stats && stats.users > 0
-      ? [{ icon: Users, value: formatNumber(stats.users), label: 'Usuarios' }]
+      ? [{ icon: Users, value: formatNumber(stats.users), label: stats.users === 1 ? 'Usuario' : 'Usuarios' }]
       : []),
     { icon: LayoutGrid, value: String(BUSINESS_CATEGORIES.length), label: 'Categorías' },
     { icon: MapPin, value: String(SCZ_ZONES.length), label: 'Zonas de SCZ' },

@@ -2,9 +2,9 @@
 import { useQuery } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Heart } from 'lucide-react'
-import Link from 'next/link'
 import { BusinessCard } from '@/components/business/BusinessCard'
 import { BusinessCardSkeleton } from '@/components/shared/SkeletonCard'
+import { EmptyState } from '@/components/shared/EmptyState'
 import { useAuth } from '@/lib/hooks/useAuth'
 import { useStore } from '@/lib/store/useStore'
 import { getBusinessById } from '@/lib/firebase/firestore'
@@ -28,11 +28,14 @@ export default function FavoritesPage() {
   })
 
   if (!isAuthenticated) return (
-    <div className="container pt-24 pb-16 text-center">
-      <Heart size={48} className="mx-auto mb-4 text-muted-foreground" />
-      <h1 className="text-2xl font-bold mb-2">Tus favoritos</h1>
-      <p className="text-muted-foreground mb-6">Inicia sesión para guardar y ver tus negocios favoritos</p>
-      <Link href="/login" className="px-6 py-3 bg-primary text-white rounded-xl font-medium hover:bg-primary/90 transition-colors">Iniciar sesión</Link>
+    <div className="container pt-20 pb-16">
+      <EmptyState
+        icon="favorite"
+        title="Tus favoritos"
+        description="Inicia sesión para guardar tus negocios favoritos y encontrarlos en cualquier dispositivo."
+        action={{ label: 'Iniciar sesión', href: '/login' }}
+        secondaryAction={{ label: 'Explorar negocios', href: '/explore' }}
+      />
     </div>
   )
 
@@ -54,12 +57,12 @@ export default function FavoritesPage() {
           {[1,2,3,4].map(i => <BusinessCardSkeleton key={i} />)}
         </div>
       ) : !businesses.length ? (
-        <div className="text-center py-20">
-          <p className="text-4xl mb-3">🤍</p>
-          <p className="font-medium">No tienes favoritos aún</p>
-          <p className="text-sm text-muted-foreground mt-1 mb-6">Guarda negocios tocando el corazón en su tarjeta</p>
-          <Link href="/explore" className="px-6 py-2.5 bg-primary text-white rounded-xl text-sm font-medium hover:bg-primary/90 transition-colors">Explorar negocios</Link>
-        </div>
+        <EmptyState
+          icon="favorite"
+          title="No tienes favoritos aún"
+          description="Guarda negocios tocando el corazón en su tarjeta y aparecerán aquí."
+          action={{ label: 'Explorar negocios', href: '/explore' }}
+        />
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           <AnimatePresence mode="popLayout">
