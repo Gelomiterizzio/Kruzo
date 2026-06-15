@@ -10,6 +10,7 @@ import {
 import { WhatsAppButton } from '@/components/shared/WhatsAppButton'
 import { AdBannerInline } from '@/components/ads/AdBannerInline'
 import { CategoryBadge } from '@/components/shared/CategoryBadge'
+import { ReputationBadges } from '@/components/business/ReputationBadges'
 import { StarRating, RatingBar } from '@/components/review/StarRating'
 import { ReviewCard } from '@/components/review/ReviewCard'
 import { ReviewForm } from '@/components/review/ReviewForm'
@@ -123,6 +124,9 @@ export function BusinessProfile({ business }: { business: Business }) {
         <div className="flex flex-wrap gap-1.5 mb-3">
           {business.category.map(c => <CategoryBadge key={c} category={c} asLink size="sm" />)}
         </div>
+
+        {/* Reputation */}
+        <ReputationBadges business={business} max={3} exclude={['verified']} className="mb-3" />
 
         {/* Stats row */}
         <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">

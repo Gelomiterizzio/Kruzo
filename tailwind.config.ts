@@ -35,12 +35,16 @@ const config: Config = {
         'accordion-up': { from: { height: 'var(--radix-accordion-content-height)' }, to: { height: '0' } },
         shimmer: { '0%': { backgroundPosition: '-200% 0' }, '100%': { backgroundPosition: '200% 0' } },
         'fade-in': { from: { opacity: '0', transform: 'translateY(8px)' }, to: { opacity: '1', transform: 'translateY(0)' } },
+        // Above-the-fold entrance driven by CSS (fires on first paint, not on JS
+        // hydration) so the hero never flashes invisible and LCP stays fast.
+        rise: { from: { opacity: '0', transform: 'translateY(18px)' }, to: { opacity: '1', transform: 'translateY(0)' } },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
         shimmer: 'shimmer 2s linear infinite',
         'fade-in': 'fade-in 0.3s ease-out',
+        rise: 'rise 0.6s cubic-bezier(0.22,1,0.36,1) both',
       },
     },
   },

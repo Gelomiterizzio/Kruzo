@@ -5,16 +5,18 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Loader2, Eye, EyeOff } from 'lucide-react'
+import { Mail } from 'lucide-react'
 import { loginSchema, type LoginFormValues } from '@/lib/utils/validators'
 import { useAuth } from '@/lib/hooks/useAuth'
+import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
+import { GoogleIcon } from '@/components/ui/GoogleIcon'
 
 export default function LoginPage() {
   const router = useRouter()
   const params = useSearchParams()
   const redirect = params.get('redirect') ?? '/dashboard'
   const { loginEmail, loginGoogle, error } = useAuth()
-  const [showPw, setShowPw] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
 
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<LoginFormValues>({
@@ -37,26 +39,17 @@ export default function LoginPage() {
     finally { setGoogleLoading(false) }
   }
 
-  const inputCls = 'w-full px-3 py-3 text-sm bg-muted border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all'
-
   return (
     <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="space-y-6">
       <div>
-        <h1 className="text-2xl font-display font-bold">Bienvenido de vuelta</h1>
+        <h1 className="text-2xl font-display font-bold tracking-tight">Bienvenido de vuelta</h1>
         <p className="text-muted-foreground text-sm mt-1">Inicia sesión para acceder a tu cuenta</p>
       </div>
 
-      <button
-        onClick={handleGoogle}
-        disabled={googleLoading}
-        className="w-full flex items-center justify-center gap-2 py-3 border border-border rounded-xl text-sm font-medium hover:bg-accent transition-all disabled:opacity-60"
-      >
-        {googleLoading
-          ? <Loader2 size={18} className="animate-spin" />
-          : <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-        }
+      <Button variant="outline" size="lg" className="w-full" onClick={handleGoogle} loading={googleLoading}>
+        {!googleLoading && <GoogleIcon />}
         Continuar con Google
-      </button>
+      </Button>
 
       <div className="relative">
         <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border" /></div>
@@ -69,27 +62,29 @@ export default function LoginPage() {
             {error}
           </div>
         )}
-        <div>
-          <label htmlFor="login-email" className="sr-only">Email</label>
-          <input id="login-email" {...register('email')} type="email" placeholder="tu@email.com" autoComplete="email" className={inputCls} />
-          {errors.email && <p className="text-xs text-destructive mt-1">{errors.email.message}</p>}
-        </div>
-        <div className="relative">
-          <label htmlFor="login-password" className="sr-only">Contraseña</label>
-          <input id="login-password" {...register('password')} type={showPw ? 'text' : 'password'} placeholder="Contraseña" autoComplete="current-password" className={`${inputCls} pr-10`} />
-          <button type="button" onClick={() => setShowPw(!showPw)} aria-label={showPw ? 'Ocultar contraseña' : 'Mostrar contraseña'} className="absolute right-3 top-3.5 text-muted-foreground hover:text-foreground">
-            {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
-          </button>
-          {errors.password && <p className="text-xs text-destructive mt-1">{errors.password.message}</p>}
-        </div>
+        <Input
+          {...register('email')}
+          type="email"
+          label="Email"
+          leftIcon={Mail}
+          placeholder="tu@email.com"
+          autoComplete="email"
+          error={errors.email?.message}
+        />
+        <Input
+          {...register('password')}
+          type="password"
+          label="Contraseña"
+          placeholder="••••••••"
+          autoComplete="current-password"
+          error={errors.password?.message}
+        />
         <div className="flex justify-end">
           <Link href="/forgot-password" className="text-xs text-primary hover:underline">¿Olvidaste tu contraseña?</Link>
         </div>
-        <button type="submit" disabled={isSubmitting}
-          className="w-full flex items-center justify-center gap-2 py-3 bg-primary text-white rounded-xl font-semibold hover:bg-primary/90 disabled:opacity-60 transition-all">
-          {isSubmitting && <Loader2 size={16} className="animate-spin" />}
+        <Button type="submit" size="lg" className="w-full" loading={isSubmitting}>
           {isSubmitting ? 'Entrando…' : 'Iniciar sesión'}
-        </button>
+        </Button>
       </form>
 
       <p className="text-center text-sm text-muted-foreground">

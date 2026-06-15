@@ -11,6 +11,8 @@ import {
 import { useAuth } from '@/lib/hooks/useAuth'
 import { useStore } from '@/lib/store/useStore'
 import { ThemeToggle } from '@/components/shared/ThemeToggle'
+import { CommandPalette } from '@/components/search/CommandPalette'
+import { buttonVariants } from '@/components/ui/button-variants'
 import { cn } from '@/lib/utils/cn'
 import { getInitials } from '@/lib/utils/formatters'
 import { getUnreadNotificationsCount } from '@/lib/firebase/firestore'
@@ -29,6 +31,7 @@ export function Navbar() {
   const [scrolled, setScrolled]       = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const [searchVal, setSearchVal]     = useState('')
+  const [cmdOpen, setCmdOpen]         = useState(false)
 
   // Real unread count — the bell only lights up when something is actually unread.
   const { data: unreadCount = 0 } = useQuery({
@@ -43,6 +46,18 @@ export function Navbar() {
     const handler = () => setScrolled(window.scrollY > 10)
     window.addEventListener('scroll', handler, { passive: true })
     return () => window.removeEventListener('scroll', handler)
+  }, [])
+
+  // ⌘K / Ctrl+K opens the command palette from anywhere.
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        setCmdOpen((v) => !v)
+      }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
   }, [])
 
   useEffect(() => {
@@ -67,6 +82,7 @@ export function Navbar() {
   }
 
   return (
+    <>
     <header
       className={cn(
         'fixed top-0 inset-x-0 z-50 transition-all duration-500',
@@ -85,21 +101,16 @@ export function Navbar() {
           <span className="text-gradient hidden sm:block tracking-tight">KRUZO</span>
         </Link>
 
-        {/* ── Search bar ── */}
-        <form onSubmit={handleSearch} className="flex-1 max-w-sm hidden md:block">
-          <div className="relative group">
-            <Search
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/60 pointer-events-none transition-colors group-focus-within:text-primary"
-              size={14}
-            />
-            <input
-              value={searchVal}
-              onChange={(e) => setSearchVal(e.target.value)}
-              placeholder="Buscar negocio, servicio…"
-              className="w-full pl-9 pr-4 py-2 text-sm bg-muted/60 rounded-xl border border-border/40 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 focus:bg-background transition-all placeholder:text-muted-foreground/50"
-            />
-          </div>
-        </form>
+        {/* ── Command palette trigger ── */}
+        <button
+          onClick={() => setCmdOpen(true)}
+          aria-label="Búsqueda rápida (Ctrl K)"
+          className="flex-1 max-w-sm hidden md:flex items-center gap-2 px-3 py-2 text-sm bg-muted/60 rounded-xl border border-border/40 text-muted-foreground/70 hover:bg-muted hover:border-border transition-all group"
+        >
+          <Search size={14} className="transition-colors group-hover:text-primary" />
+          <span className="flex-1 text-left">Buscar negocio, servicio…</span>
+          <kbd className="text-[10px] font-medium border border-border/70 rounded-md px-1.5 py-0.5 leading-none">⌘K</kbd>
+        </button>
 
         {/* ── Desktop nav links ── */}
         <div className="hidden lg:flex items-center gap-0.5">
@@ -138,9 +149,9 @@ export function Navbar() {
               {(isEntrepreneur || isAdmin) && (
                 <Link
                   href="/dashboard/posts/new"
-                  className="hidden sm:flex items-center gap-1.5 px-3.5 py-1.5 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-primary/90 active:scale-95 transition-all shadow-sm hover:shadow-glow-sm"
+                  className={cn(buttonVariants({ size: 'sm' }), 'hidden sm:flex')}
                 >
-                  <Plus size={14} /> Publicar
+                  <Plus size={15} /> Publicar
                 </Link>
               )}
 
@@ -223,11 +234,11 @@ export function Navbar() {
               </div>
             </>
           ) : (
-            <div className="flex items-center gap-2">
-              <Link href="/login" className="px-3.5 py-1.5 text-sm font-medium hover:bg-accent/70 rounded-xl transition-colors hidden sm:block">
+            <div className="flex items-center gap-1.5">
+              <Link href="/login" className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'hidden sm:flex')}>
                 Entrar
               </Link>
-              <Link href="/register" className="px-3.5 py-1.5 text-sm font-semibold bg-primary text-white rounded-xl hover:bg-primary/90 active:scale-95 transition-all shadow-sm hover:shadow-glow-sm">
+              <Link href="/register" className={buttonVariants({ size: 'sm' })}>
                 Registrarse
               </Link>
             </div>
@@ -303,13 +314,13 @@ export function Navbar() {
                     Notificaciones
                   </Link>
                   {(isEntrepreneur || isAdmin) && (
-                    <Link href="/dashboard/posts/new" className="flex items-center gap-2 px-4 py-2.5 bg-primary text-white rounded-xl text-sm font-semibold">
+                    <Link href="/dashboard/posts/new" className={cn(buttonVariants({ size: 'md' }), 'w-full mt-1')}>
                       <Plus size={15} /> Nueva publicación
                     </Link>
                   )}
                 </>
               ) : (
-                <Link href="/register" className="block px-4 py-2.5 bg-primary text-white rounded-xl text-sm font-semibold text-center">
+                <Link href="/register" className={cn(buttonVariants({ size: 'md' }), 'w-full mt-1')}>
                   Crear cuenta gratis
                 </Link>
               )}
@@ -318,5 +329,8 @@ export function Navbar() {
         )}
       </AnimatePresence>
     </header>
+
+    <CommandPalette open={cmdOpen} onClose={() => setCmdOpen(false)} />
+    </>
   )
 }

@@ -3,10 +3,11 @@ import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Loader2, Save, MapPin } from 'lucide-react'
+import { Save, MapPin } from 'lucide-react'
 import { businessSchema, type BusinessFormValues } from '@/lib/utils/validators'
 import { ImageUpload } from '@/components/shared/ImageUpload'
 import { Switch } from '@/components/ui/Switch'
+import { Button } from '@/components/ui/Button'
 import { uploadBusinessImages } from '@/lib/firebase/storage'
 import { createBusiness, updateBusiness } from '@/lib/firebase/firestore'
 import { useAuth } from '@/lib/hooks/useAuth'
@@ -27,7 +28,7 @@ const Field = ({ label, error, children }: { label: string; error?: string; chil
   </div>
 )
 
-const inputCls = 'w-full px-3 py-2.5 text-sm bg-muted border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all'
+const inputCls = 'w-full px-3.5 py-2.5 text-sm bg-card border border-border rounded-xl outline-none transition-all duration-200 focus:border-primary focus:ring-4 focus:ring-primary/15'
 
 export function BusinessForm({ existing }: Props) {
   const router = useRouter()
@@ -219,11 +220,10 @@ export function BusinessForm({ existing }: Props) {
         </div>
       )}
 
-      <button type="submit" disabled={loading}
-        className="w-full flex items-center justify-center gap-2 py-3 bg-primary text-white rounded-2xl font-semibold hover:bg-primary/90 disabled:opacity-60 transition-all">
-        {loading ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
+      <Button type="submit" size="lg" className="w-full" loading={loading}>
+        {!loading && <Save size={18} />}
         {loading ? 'Guardando…' : existing ? 'Actualizar negocio' : 'Crear negocio'}
-      </button>
+      </Button>
     </form>
   )
 }
