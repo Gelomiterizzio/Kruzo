@@ -30,9 +30,9 @@ export function SearchBar({ size = 'lg', className, placeholder = 'Buscar negoci
       onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setFocused(false) }}
     >
       <div className={cn(
-        'flex items-center gap-2 bg-card border border-border rounded-2xl transition-all',
+        'flex items-center gap-2 bg-card border border-border rounded-2xl transition-all duration-200',
         size === 'lg' ? 'px-4 py-3' : 'px-3 py-2',
-        focused && 'border-primary ring-2 ring-primary/20 shadow-lg'
+        focused && 'border-primary ring-4 ring-primary/15 shadow-warm-lg'
       )}>
         <Search size={size === 'lg' ? 20 : 16} className="text-muted-foreground shrink-0" />
         <input ref={inputRef}

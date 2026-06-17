@@ -5,8 +5,10 @@ import { motion } from 'framer-motion'
 import { Heart, Star, MapPin, BadgeCheck } from 'lucide-react'
 import { WhatsAppButton } from '@/components/shared/WhatsAppButton'
 import { CategoryBadge } from '@/components/shared/CategoryBadge'
+import { ReputationBadges } from '@/components/business/ReputationBadges'
 import { useFavorites } from '@/lib/hooks/useFavorites'
 import { formatNumber } from '@/lib/utils/formatters'
+import { formatDistance } from '@/lib/utils/geo'
 import type { Business } from '@/lib/types/business'
 
 interface Props {
@@ -14,9 +16,11 @@ interface Props {
   index?: number
   /** Set false when a parent already animates the card in (avoids double entrance). */
   entrance?: boolean
+  /** When provided (nearby mode), shows the distance from the user. */
+  distanceKm?: number
 }
 
-export function BusinessCard({ business, index = 0, entrance = true }: Props) {
+export function BusinessCard({ business, index = 0, entrance = true, distanceKm }: Props) {
   const { isFavorite, toggleFavorite } = useFavorites()
   const fav = isFavorite(business.id)
 
@@ -44,11 +48,18 @@ export function BusinessCard({ business, index = 0, entrance = true }: Props) {
         onClick={() => toggleFavorite(business.id, business.name)}
         className="absolute top-2.5 right-2.5 z-10 p-1.5 bg-background/75 backdrop-blur-sm rounded-full shadow-sm transition-all hover:scale-110 active:scale-95"
         aria-label={fav ? 'Quitar favorito' : 'Guardar'}
+        aria-pressed={fav}
       >
-        <Heart
-          size={15}
-          className={fav ? 'fill-red-500 text-red-500' : 'text-foreground/50'}
-        />
+        <motion.span
+          animate={fav ? { scale: [1, 1.35, 1] } : { scale: 1 }}
+          transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+          className="block"
+        >
+          <Heart
+            size={15}
+            className={fav ? 'fill-red-500 text-red-500' : 'text-foreground/50'}
+          />
+        </motion.span>
       </button>
 
       {/* ── Cover image ── */}
@@ -105,6 +116,9 @@ export function BusinessCard({ business, index = 0, entrance = true }: Props) {
             <p className="text-xs text-muted-foreground flex items-center gap-0.5 mt-0.5">
               <MapPin size={10} className="text-primary/50" />
               {business.zone}
+              {distanceKm !== undefined && (
+                <span className="text-primary font-medium">· a {formatDistance(distanceKm)}</span>
+              )}
             </p>
           </div>
         </div>
@@ -120,8 +134,9 @@ export function BusinessCard({ business, index = 0, entrance = true }: Props) {
               ({formatNumber(business.reviewCount)})
             </span>
           </div>
+          <ReputationBadges business={business} max={1} size="xs" exclude={['verified']} />
           <div className="flex gap-1 flex-wrap ml-auto">
-            {business.category.slice(0, 2).map((c) => (
+            {business.category.slice(0, 1).map((c) => (
               <CategoryBadge key={c} category={c} size="xs" />
             ))}
           </div>

@@ -24,8 +24,10 @@
     --input: 34 20% 87%;
     --ring: 22 94% 48%;
     --radius: 0.75rem;
+    color-scheme: light;
   }
   .dark {
+    color-scheme: dark;
     --background: 20 22% 5%;
     --foreground: 38 30% 94%;
     --card: 20 20% 8%;
@@ -53,8 +55,61 @@
   body {
     @apply bg-background text-foreground antialiased;
     font-feature-settings: "rlig" 1, "calt" 1;
+    -webkit-tap-highlight-color: transparent;
+    text-rendering: optimizeLegibility;
   }
   html { scroll-behavior: smooth; }
+
+  /* ─── Headings: tighter optical kerning ─── */
+  h1, h2, h3 { text-wrap: balance; }
+  p { text-wrap: pretty; }
+
+  /* ─── Unified keyboard focus ─── Brand-tinted, follows border-radius.
+     Only shows for keyboard users (:focus-visible); components with their own
+     focus ring keep it via higher specificity. */
+  :where(a, button, [role="button"], input, select, textarea, summary, [tabindex]):focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+
+  /* ─── Brand text selection ─── */
+  ::selection {
+    background: hsl(var(--primary) / 0.22);
+    color: hsl(var(--foreground));
+  }
+
+  /* ─── Autofill: keep the themed surface (no jarring blue/yellow box) ─── */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  textarea:-webkit-autofill,
+  select:-webkit-autofill {
+    -webkit-text-fill-color: hsl(var(--foreground));
+    -webkit-box-shadow: 0 0 0 1000px hsl(var(--card)) inset;
+    caret-color: hsl(var(--foreground));
+    transition: background-color 9999s ease-in-out 0s;
+  }
+
+  /* ─── Refined scrollbars (desktop pointers only) ─── */
+  @media (pointer: fine) {
+    html { scrollbar-width: thin; scrollbar-color: hsl(var(--muted-foreground) / 0.3) transparent; }
+    ::-webkit-scrollbar { width: 11px; height: 11px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb {
+      background: hsl(var(--muted-foreground) / 0.28);
+      border-radius: 9999px;
+      border: 3px solid transparent;
+      background-clip: padding-box;
+    }
+    ::-webkit-scrollbar-thumb:hover { background: hsl(var(--muted-foreground) / 0.5); background-clip: padding-box; }
+  }
+
+  /* ─── Respect reduced-motion for CSS animations framer-motion can't see ─── */
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .shimmer,
+    [class*="animate-"] { animation: none !important; }
+  }
 }
 
 @layer utilities {
