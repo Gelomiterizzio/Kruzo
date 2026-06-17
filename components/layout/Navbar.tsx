@@ -32,6 +32,7 @@ export function Navbar() {
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const [searchVal, setSearchVal]     = useState('')
   const [cmdOpen, setCmdOpen]         = useState(false)
+  const [isMac, setIsMac]             = useState(false)
 
   // Real unread count — the bell only lights up when something is actually unread.
   const { data: unreadCount = 0 } = useQuery({
@@ -46,6 +47,11 @@ export function Navbar() {
     const handler = () => setScrolled(window.scrollY > 10)
     window.addEventListener('scroll', handler, { passive: true })
     return () => window.removeEventListener('scroll', handler)
+  }, [])
+
+  // Show the right modifier hint per platform (⌘ on Mac, Ctrl elsewhere).
+  useEffect(() => {
+    setIsMac(/Mac|iPhone|iPad|iPod/.test(navigator.platform || navigator.userAgent))
   }, [])
 
   // ⌘K / Ctrl+K opens the command palette from anywhere.
@@ -104,12 +110,12 @@ export function Navbar() {
         {/* ── Command palette trigger ── */}
         <button
           onClick={() => setCmdOpen(true)}
-          aria-label="Búsqueda rápida (Ctrl K)"
+          aria-label="Búsqueda rápida"
           className="flex-1 max-w-sm hidden md:flex items-center gap-2 px-3 py-2 text-sm bg-muted/60 rounded-xl border border-border/40 text-muted-foreground/70 hover:bg-muted hover:border-border transition-all group"
         >
           <Search size={14} className="transition-colors group-hover:text-primary" />
           <span className="flex-1 text-left">Buscar negocio, servicio…</span>
-          <kbd className="text-[10px] font-medium border border-border/70 rounded-md px-1.5 py-0.5 leading-none">⌘K</kbd>
+          <kbd className="text-[10px] font-medium border border-border/70 rounded-md px-1.5 py-0.5 leading-none">{isMac ? '⌘K' : 'Ctrl K'}</kbd>
         </button>
 
         {/* ── Desktop nav links ── */}

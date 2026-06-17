@@ -48,11 +48,18 @@ export function BusinessCard({ business, index = 0, entrance = true, distanceKm 
         onClick={() => toggleFavorite(business.id, business.name)}
         className="absolute top-2.5 right-2.5 z-10 p-1.5 bg-background/75 backdrop-blur-sm rounded-full shadow-sm transition-all hover:scale-110 active:scale-95"
         aria-label={fav ? 'Quitar favorito' : 'Guardar'}
+        aria-pressed={fav}
       >
-        <Heart
-          size={15}
-          className={fav ? 'fill-red-500 text-red-500' : 'text-foreground/50'}
-        />
+        <motion.span
+          animate={fav ? { scale: [1, 1.35, 1] } : { scale: 1 }}
+          transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+          className="block"
+        >
+          <Heart
+            size={15}
+            className={fav ? 'fill-red-500 text-red-500' : 'text-foreground/50'}
+          />
+        </motion.span>
       </button>
 
       {/* ── Cover image ── */}

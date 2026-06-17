@@ -75,8 +75,8 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
             type="button"
             onClick={() => setReveal((v) => !v)}
             aria-label={reveal ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-            tabIndex={-1}
-            className="shrink-0 text-muted-foreground hover:text-foreground transition-colors -mr-1 p-1"
+            aria-pressed={reveal}
+            className="shrink-0 grid place-items-center w-8 h-8 -mr-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
           >
             {reveal ? <EyeOff size={16} /> : <Eye size={16} />}
           </button>
