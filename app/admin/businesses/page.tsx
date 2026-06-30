@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { collection, query, orderBy, limit, getDocs, doc, updateDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase/config'
 import type { Business } from '@/lib/types/business'
-import { BadgeCheck, Star, Eye, CheckCircle, Ban } from 'lucide-react'
+import { BadgeCheck, Star, Eye, CheckCircle, Ban, XCircle } from 'lucide-react'
 import { toast } from 'sonner'
 import { formatRelativeTime } from '@/lib/utils/formatters'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
@@ -33,11 +33,12 @@ export default function AdminBusinessesPage() {
     load()
   }, [])
 
+  const STATUS_VERB: Record<string, string> = { active: 'aprobado', suspended: 'suspendido', rejected: 'rechazado' }
   const updateStatus = async (id: string, status: string) => {
     try {
       await updateDoc(doc(db, 'businesses', id), { status })
       setBusinesses(prev => prev.map(b => b.id === id ? { ...b, status: status as Business['status'] } : b))
-      toast.success(`Negocio ${status === 'active' ? 'aprobado' : 'suspendido'}`)
+      toast.success(`Negocio ${STATUS_VERB[status] ?? 'actualizado'}`)
     } catch { toast.error('Error al actualizar') }
   }
 
@@ -99,9 +100,14 @@ export default function AdminBusinessesPage() {
                 <div className="flex items-center gap-1 shrink-0 flex-wrap justify-end">
                   <span className={`text-xs px-2 py-0.5 rounded-full ${cfg.cls}`}>{cfg.label}</span>
                   {b.status === 'pending' && (
-                    <button onClick={() => updateStatus(b.id, 'active')} className="p-1.5 rounded-lg bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-400 hover:bg-green-200 transition-colors" title="Aprobar">
-                      <CheckCircle size={14} />
-                    </button>
+                    <>
+                      <button onClick={() => updateStatus(b.id, 'active')} className="p-1.5 rounded-lg bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-400 hover:bg-green-200 transition-colors" title="Aprobar">
+                        <CheckCircle size={14} />
+                      </button>
+                      <button onClick={() => updateStatus(b.id, 'rejected')} className="p-1.5 rounded-lg bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-400 hover:bg-red-200 transition-colors" title="Rechazar">
+                        <XCircle size={14} />
+                      </button>
+                    </>
                   )}
                   {b.status === 'active' && (
                     <button onClick={() => setToSuspend(b)} className="p-1.5 rounded-lg bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-400 hover:bg-red-200 transition-colors" title="Suspender">

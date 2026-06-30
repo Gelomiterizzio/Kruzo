@@ -8,6 +8,14 @@ service cloud.firestore {
     function keepsLocked(locked) {
       return !request.resource.data.diff(resource.data).affectedKeys().hasAny(locked);
     }
+    // A banned user keeps a valid Firebase token until it expires (the account
+    // is only flagged, not disabled), so the ban MUST be enforced here — the
+    // real security boundary — and not only at login / session-cookie level.
+    // True when the caller is NOT banned (new users with no doc yet pass).
+    function notBanned() {
+      return !(exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('isBanned', false) == true);
+    }
 
     // Business aggregate counters (favoriteCount, reviewCount, rating,
     // ratingDistribution, viewCount) are maintained ONLY by Cloud Functions /
@@ -24,6 +32,7 @@ service cloud.firestore {
       // flags (role escalation, self-unban and self-verify are blocked).
       allow update: if isAdmin()
         || (isAuth() && request.auth.uid == uid
+            && notBanned()
             && keepsLocked(['role', 'isBanned', 'banReason', 'isVerified', 'reputation'].toSet()));
       allow delete: if isAdmin();
       match /favorites/{fid} { allow read, write: if isAuth() && request.auth.uid == uid; }
@@ -41,6 +50,7 @@ service cloud.firestore {
       // 'pending' and unprivileged; admins approve/verify/feature afterwards.
       allow create: if isAdmin()
         || (isAuth()
+            && notBanned()
             && request.resource.data.ownerId == request.auth.uid
             && request.resource.data.status == 'pending'
             && request.resource.data.isVerified == false
@@ -50,6 +60,7 @@ service cloud.firestore {
       // counter edits / createdAt forgery).
       allow update: if isAdmin()
         || (isOwner(resource)
+            && notBanned()
             && keepsLocked(['ownerId', 'slug', 'status', 'isVerified', 'isFeatured', 'featuredUntil', 'plan',
                             'rating', 'reviewCount', 'ratingDistribution', 'viewCount', 'favoriteCount',
                             'shareCount', 'contactCount', 'createdAt'].toSet()));
@@ -59,6 +70,7 @@ service cloud.firestore {
         // One review per user per business: the review id MUST equal the author's uid,
         // so a user can hold at most one review doc per business (no spam/duplicates).
         allow create: if isAuth()
+          && notBanned()
           && rid == request.auth.uid
           && request.resource.data.userId == request.auth.uid
           && request.resource.data.rating >= 1 && request.resource.data.rating <= 5;
@@ -68,6 +80,7 @@ service cloud.firestore {
         // impersonate someone else.
         allow update: if isAdmin()
           || (isOwner(resource)
+              && notBanned()
               && keepsLocked(['userId', 'businessId', 'isVerified', 'isHidden', 'reportCount',
                               'ownerReply', 'ownerRepliedAt', 'userName', 'userPhoto', 'createdAt'].toSet()));
         allow delete: if isOwner(resource) || isAdmin();
@@ -80,6 +93,7 @@ service cloud.firestore {
       // business doc itself — no role needed).
       allow create: if isAdmin()
         || (isAuth()
+            && notBanned()
             && request.resource.data.ownerId == request.auth.uid
             && get(/databases/$(database)/documents/businesses/$(request.resource.data.businessId)).data.ownerId == request.auth.uid);
       // Owners edit their post content and may soft-delete it, but cannot
@@ -87,6 +101,7 @@ service cloud.firestore {
       // same or become 'deleted') nor forge counters/recency.
       allow update: if isAdmin()
         || (isOwner(resource)
+            && notBanned()
             && keepsLocked(['ownerId', 'businessId', 'isFeatured',
                             'viewCount', 'likeCount', 'commentCount', 'shareCount', 'createdAt'].toSet())
             && (request.resource.data.status == resource.data.status
@@ -104,7 +119,7 @@ service cloud.firestore {
 
     match /reports/{rid} {
       allow read: if isAdmin();
-      allow create: if isAuth() && request.resource.data.reporterId == request.auth.uid;
+      allow create: if isAuth() && notBanned() && request.resource.data.reporterId == request.auth.uid;
       allow update, delete: if isAdmin();
     }
 

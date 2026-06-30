@@ -252,6 +252,32 @@ await expectAllowed('alice marca su notificación como leída',
 await expectDenied('bob lee las notificaciones de alice',
   getDoc(doc(bob, 'users/alice/notifications/n1')))
 
+// ─── BANEADOS: el ban se enforca en las REGLAS, no solo en login ────────────
+section('BANEADOS (enforcement en el boundary real)')
+await expectDenied('usuario baneado crea una reseña (bypass de la UI)',
+  setDoc(doc(mallory, 'businesses/biz-bob/reviews/mallory'), {
+    userId: 'mallory', businessId: 'biz-bob', userName: 'Mallory', userPhoto: '',
+    rating: 5, comment: 'Reseña forjada por un baneado', isHidden: false, isVerified: false, reportCount: 0,
+  }))
+await expectDenied('usuario baneado crea un negocio',
+  setDoc(doc(mallory, 'businesses/biz-mallory'), {
+    ownerId: 'mallory', name: 'Banned Biz', status: 'pending', isVerified: false, isFeatured: false,
+  }))
+await expectDenied('usuario baneado crea un reporte (abuso)',
+  setDoc(doc(mallory, 'reports/report_mallory_x'), {
+    type: 'review', businessId: 'biz-alice', reviewId: 'bob',
+    reporterId: 'mallory', status: 'pending', createdAt: new Date(),
+  }))
+await expectDenied('usuario baneado edita su propio perfil',
+  updateDoc(doc(mallory, 'users/mallory'), { displayName: 'Sigo activo' }))
+// Control: un usuario SIN doc todavía (recién autenticado) no debe quedar bloqueado.
+await expectAllowed('usuario nuevo sin doc (no baneado) sí puede reseñar',
+  setDoc(doc(testEnv.authenticatedContext('carol').firestore(),
+    'businesses/biz-bob/reviews/carol'), {
+    userId: 'carol', businessId: 'biz-bob', userName: 'Carol', userPhoto: '',
+    rating: 4, comment: 'Buen servicio en general', isHidden: false, isVerified: false, reportCount: 0,
+  }))
+
 // ─── Resultado ──────────────────────────────────────────────────────────────
 console.log(lines.join('\n'))
 console.log(`\n══════════════════════════════════════`)
