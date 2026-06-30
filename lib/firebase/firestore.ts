@@ -78,8 +78,8 @@ export async function createBusiness(ownerId: string, ownerName: string, data: B
     createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
   })
   // Link the business to its owner right away so the dashboard finds it on the
-  // very next read. The onBusinessCreated Cloud Function repeats this server-
-  // side (idempotent arrayUnion) and also promotes the user to entrepreneur.
+  // very next read. The onBusinessWritten Cloud Function repeats this server-
+  // side (idempotent arrayUnion). Owning a business is a resource, not a role.
   try {
     await updateDoc(doc(db, 'users', ownerId), { businessIds: arrayUnion(ref.id) })
   } catch { /* non-fatal: the Cloud Function performs the same link */ }

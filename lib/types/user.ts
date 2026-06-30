@@ -1,6 +1,9 @@
 import type { Timestamp } from 'firebase/firestore'
 
-export type UserRole = 'user' | 'entrepreneur' | 'admin'
+// Two real roles only. Owning a business is NOT a role — it is a resource
+// associated with the user (see `businessIds`). A user who registers a business
+// stays a 'user'; "business owner" is derived from `businessIds.length > 0`.
+export type UserRole = 'user' | 'admin'
 
 export interface UserNotificationSettings {
   email: boolean; whatsapp: boolean; push: boolean

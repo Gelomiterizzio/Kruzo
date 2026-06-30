@@ -13,10 +13,9 @@ type PendingAction =
   | { kind: 'make-admin'; user: AppUser }
   | null
 
-const ROLE_CFG = {
-  admin:        { label: 'Admin',       cls: 'bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-400' },
-  entrepreneur: { label: 'Emprendedor', cls: 'bg-primary/10 text-primary' },
-  user:         { label: 'Usuario',     cls: 'bg-muted text-muted-foreground' },
+const ROLE_CFG: Record<string, { label: string; cls: string }> = {
+  admin: { label: 'Admin',   cls: 'bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-400' },
+  user:  { label: 'Usuario', cls: 'bg-muted text-muted-foreground' },
 }
 
 export default function AdminUsersPage() {
@@ -75,7 +74,7 @@ export default function AdminUsersPage() {
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
                   <span className={`text-xs px-2 py-0.5 rounded-full ${cfg.cls}`}>{cfg.label}</span>
-                  <select value={u.role} aria-label={`Rol de ${u.displayName || u.email}`}
+                  <select value={u.role === 'admin' ? 'admin' : 'user'} aria-label={`Rol de ${u.displayName || u.email}`}
                     onChange={e => {
                       // Granting admin is the most sensitive action — confirm it.
                       if (e.target.value === 'admin') setPending({ kind: 'make-admin', user: u })
@@ -83,7 +82,6 @@ export default function AdminUsersPage() {
                     }}
                     className="text-xs px-2 py-1 border border-border rounded-lg bg-background">
                     <option value="user">Usuario</option>
-                    <option value="entrepreneur">Emprendedor</option>
                     <option value="admin">Admin</option>
                   </select>
                   <button onClick={() => u.isBanned ? toggleBan(u.id, true) : setPending({ kind: 'ban', user: u })}

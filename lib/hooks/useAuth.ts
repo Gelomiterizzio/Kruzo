@@ -80,10 +80,10 @@ export function useAuth() {
     clearError,
     refreshUser,
     isAuthenticated: !!firebaseUser,
-    // Owning a business counts as entrepreneur even if the role promotion
-    // (done async by a Cloud Function) hasn't landed in this session yet.
+    // "Business owner" is NOT a role — it is derived from owning a business
+    // (a resource on the account). Admins also see business/publish UI.
     isEntrepreneur:
-      user?.role === 'entrepreneur' || user?.role === 'admin' || (user?.businessIds?.length ?? 0) > 0,
+      user?.role === 'admin' || (user?.businessIds?.length ?? 0) > 0,
     isAdmin: user?.role === 'admin',
     loginGoogle,
     loginEmail,
