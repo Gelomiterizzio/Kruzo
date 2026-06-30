@@ -41,6 +41,19 @@ export default function NewPostPage() {
             </Link>
           </div>
         </div>
+      ) : business.status !== 'active' ? (
+        <div className="p-5 bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 rounded-2xl flex items-start gap-3">
+          <AlertCircle size={18} className="text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+          <div>
+            <p className="font-medium text-sm text-amber-800 dark:text-amber-300">Tu negocio aún no está aprobado</p>
+            <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">
+              Podrás publicar productos o servicios una vez que tu negocio sea aprobado por el equipo de KRUZO.
+            </p>
+            <Link href="/dashboard/business" className="text-xs font-medium text-amber-800 dark:text-amber-300 underline mt-1 block">
+              Ver estado de mi negocio →
+            </Link>
+          </div>
+        </div>
       ) : (
         <PostForm business={business} />
       )}
