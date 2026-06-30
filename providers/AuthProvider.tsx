@@ -23,6 +23,21 @@ const AuthContext = createContext<AuthContextType>({
   refreshUser: async () => {},
 })
 
+// The profile read (getUserById) is a network call that, when Firestore is
+// unreachable/slow, can stay PENDING forever (it neither resolves nor rejects).
+// Because the auth callback awaits it before clearing `loading`, a hung read
+// used to freeze the whole app (Settings stuck on a skeleton, navbar stuck on
+// the logged-out state). Bounding it guarantees `loading` always resolves.
+const PROFILE_LOAD_TIMEOUT_MS = 12000
+function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
+  return Promise.race([
+    p,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error('profile-load-timeout')), ms),
+    ),
+  ])
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [firebaseUser, setFirebaseUser] = useState<User | null>(null)
   const [appUser, setAppUser] = useState<AppUser | null>(null)
@@ -39,7 +54,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const loadAppUser = useCallback(async (uid: string): Promise<AppUser | null> => {
     try {
-      const u = await getUserById(uid)
+      const u = await withTimeout(getUserById(uid), PROFILE_LOAD_TIMEOUT_MS)
       if (u?.isBanned) {
         // Banned accounts are signed out everywhere (server already refuses
         // the session cookie; this covers an existing client session).
