@@ -6,7 +6,7 @@ import { useQuery } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Search, Bell, Heart, Menu, X, Plus, ChevronDown,
-  LogOut, Settings, LayoutDashboard, Shield,
+  LogOut, Settings, LayoutDashboard, Shield, Store, User as UserIcon,
 } from 'lucide-react'
 import { useAuth } from '@/lib/hooks/useAuth'
 import { useStore } from '@/lib/store/useStore'
@@ -26,8 +26,17 @@ const NAV_LINKS = [
 export function Navbar() {
   const pathname   = usePathname()
   const router     = useRouter()
-  const { user, signOut, isEntrepreneur, isAdmin } = useAuth()
+  const { user, firebaseUser, isAuthenticated, signOut, isEntrepreneur, isAdmin } = useAuth()
   const { isMobileMenuOpen, setIsMobileMenuOpen } = useStore()
+
+  // Show the logged-in UI as soon as Firebase confirms a session — do NOT wait
+  // for the Firestore profile (appUser), which may still be loading or fail on a
+  // slow network. Display data falls back to the Firebase user meanwhile, so the
+  // "Entrar/Registrarse" buttons never flash for an authenticated user.
+  const displayName = user?.displayName || firebaseUser?.displayName || 'Mi cuenta'
+  const photoURL    = user?.photoURL || firebaseUser?.photoURL || ''
+  const email       = user?.email || firebaseUser?.email || ''
+  const profileUid  = user?.id || firebaseUser?.uid
   const [scrolled, setScrolled]       = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const [searchVal, setSearchVal]     = useState('')
@@ -150,7 +159,7 @@ export function Navbar() {
         <div className="ml-auto flex items-center gap-1.5">
           <ThemeToggle />
 
-          {user ? (
+          {isAuthenticated ? (
             <>
               {(isEntrepreneur || isAdmin) && (
                 <Link
@@ -185,11 +194,11 @@ export function Navbar() {
                   onClick={(e) => { e.stopPropagation(); setUserMenuOpen(!userMenuOpen) }}
                   className="flex items-center gap-1.5 p-1 rounded-xl hover:bg-accent/70 transition-colors"
                 >
-                  {user.photoURL ? (
-                    <img src={user.photoURL} alt="" className="w-8 h-8 rounded-xl object-cover ring-2 ring-border" />
+                  {photoURL ? (
+                    <img src={photoURL} alt="" className="w-8 h-8 rounded-xl object-cover ring-2 ring-border" />
                   ) : (
                     <div className="w-8 h-8 rounded-xl bg-primary/15 text-primary flex items-center justify-center text-xs font-bold">
-                      {getInitials(user.displayName || 'U')}
+                      {getInitials(displayName)}
                     </div>
                   )}
                   <ChevronDown
@@ -208,13 +217,19 @@ export function Navbar() {
                       className="absolute right-0 mt-2 w-56 bg-card/95 backdrop-blur-xl border border-border/60 rounded-2xl shadow-warm-lg p-1.5 z-50"
                     >
                       <div className="px-3 py-2.5 border-b border-border/50 mb-1.5">
-                        <p className="text-sm font-bold truncate">{user.displayName}</p>
-                        <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                        <p className="text-sm font-bold truncate">{displayName}</p>
+                        {email && <p className="text-xs text-muted-foreground truncate">{email}</p>}
                       </div>
 
-                      {(isEntrepreneur || isAdmin) && (
-                        <Link href="/dashboard" className="flex items-center gap-2.5 px-3 py-2 text-sm rounded-xl hover:bg-accent/70 transition-colors">
-                          <LayoutDashboard size={14} className="text-muted-foreground" /> Panel de control
+                      <Link href="/dashboard" className="flex items-center gap-2.5 px-3 py-2 text-sm rounded-xl hover:bg-accent/70 transition-colors">
+                        <LayoutDashboard size={14} className="text-muted-foreground" /> Panel de control
+                      </Link>
+                      <Link href="/dashboard/business" className="flex items-center gap-2.5 px-3 py-2 text-sm rounded-xl hover:bg-accent/70 transition-colors">
+                        <Store size={14} className="text-muted-foreground" /> Mis negocios
+                      </Link>
+                      {profileUid && (
+                        <Link href={`/user/${profileUid}`} className="flex items-center gap-2.5 px-3 py-2 text-sm rounded-xl hover:bg-accent/70 transition-colors">
+                          <UserIcon size={14} className="text-muted-foreground" /> Perfil
                         </Link>
                       )}
                       {isAdmin && (
@@ -307,7 +322,7 @@ export function Navbar() {
                   {l.label}
                 </Link>
               ))}
-              {user ? (
+              {isAuthenticated ? (
                 <>
                   <Link href="/favorites" className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-sm hover:bg-accent/70">
                     <Heart size={15} className="text-muted-foreground" /> Favoritos
@@ -319,16 +334,38 @@ export function Navbar() {
                     </span>
                     Notificaciones
                   </Link>
+                  <Link href="/dashboard" className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-sm hover:bg-accent/70">
+                    <LayoutDashboard size={15} className="text-muted-foreground" /> Panel de control
+                  </Link>
+                  <Link href="/dashboard/business" className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-sm hover:bg-accent/70">
+                    <Store size={15} className="text-muted-foreground" /> Mis negocios
+                  </Link>
+                  {isAdmin && (
+                    <Link href="/admin" className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-sm text-primary font-medium hover:bg-primary/10">
+                      <Shield size={15} /> Administración
+                    </Link>
+                  )}
+                  <Link href="/settings" className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-sm hover:bg-accent/70">
+                    <Settings size={15} className="text-muted-foreground" /> Configuración
+                  </Link>
                   {(isEntrepreneur || isAdmin) && (
                     <Link href="/dashboard/posts/new" className={cn(buttonVariants({ size: 'md' }), 'w-full mt-1')}>
                       <Plus size={15} /> Nueva publicación
                     </Link>
                   )}
+                  <button onClick={() => signOut()} className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-sm text-destructive hover:bg-destructive/10 w-full">
+                    <LogOut size={15} /> Cerrar sesión
+                  </button>
                 </>
               ) : (
-                <Link href="/register" className={cn(buttonVariants({ size: 'md' }), 'w-full mt-1')}>
-                  Crear cuenta gratis
-                </Link>
+                <div className="flex flex-col gap-2 pt-1">
+                  <Link href="/login" className={cn(buttonVariants({ variant: 'outline', size: 'md' }), 'w-full')}>
+                    Entrar
+                  </Link>
+                  <Link href="/register" className={cn(buttonVariants({ size: 'md' }), 'w-full')}>
+                    Crear cuenta gratis
+                  </Link>
+                </div>
               )}
             </div>
           </motion.div>
