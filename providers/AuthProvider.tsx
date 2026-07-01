@@ -1,7 +1,7 @@
 'use client'
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
 import { type User } from 'firebase/auth'
-import { onAuthChange, syncSession, clearSession, logout } from '@/lib/firebase/auth'
+import { onAuthChange, syncSession, clearSession, logout, createUserDocument } from '@/lib/firebase/auth'
 import { getUserById } from '@/lib/firebase/firestore'
 import { initAppCheck } from '@/lib/firebase/config'
 import { useStore } from '@/lib/store/useStore'
@@ -42,7 +42,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [firebaseUser, setFirebaseUser] = useState<User | null>(null)
   const [appUser, setAppUser] = useState<AppUser | null>(null)
   const [loading, setLoading] = useState(true)
-  const uidRef = useRef<string | null>(null)
+  const fbUserRef = useRef<User | null>(null)
   const setStoreUser = useStore((s) => s.setUser)
   const setFavorites = useStore((s) => s.setFavorites)
 
@@ -52,9 +52,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     void initAppCheck()
   }, [])
 
-  const loadAppUser = useCallback(async (uid: string): Promise<AppUser | null> => {
+  const loadAppUser = useCallback(async (fbUser: User): Promise<AppUser | null> => {
     try {
-      const u = await withTimeout(getUserById(uid), PROFILE_LOAD_TIMEOUT_MS)
+      let u = await withTimeout(getUserById(fbUser.uid), PROFILE_LOAD_TIMEOUT_MS)
+      // Self-heal: an authenticated user with no Firestore profile (e.g. the
+      // doc creation failed at sign-up, an Auth-only account, or an old
+      // email-login path that never created it). Create it idempotently and
+      // re-read, instead of leaving the app profile-less. (A missing doc RESOLVES
+      // to null in ms — it never hung; this closes the real data-level gap.)
+      if (!u) {
+        await withTimeout(createUserDocument(fbUser), PROFILE_LOAD_TIMEOUT_MS)
+        u = await withTimeout(getUserById(fbUser.uid), PROFILE_LOAD_TIMEOUT_MS)
+      }
       if (u?.isBanned) {
         // Banned accounts are signed out everywhere (server already refuses
         // the session cookie; this covers an existing client session).
@@ -74,18 +83,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [setStoreUser, setFavorites])
 
   const refreshUser = useCallback(async () => {
-    if (uidRef.current) await loadAppUser(uidRef.current)
+    if (fbUserRef.current) await loadAppUser(fbUserRef.current)
   }, [loadAppUser])
 
   useEffect(() => {
     const unsub = onAuthChange(async (fbUser) => {
       setFirebaseUser(fbUser)
-      uidRef.current = fbUser?.uid ?? null
+      fbUserRef.current = fbUser
       if (fbUser) {
         // Keep the server session cookie in sync with the client session
         // (covers expired/missing cookie while the client is still signed in).
         void syncSession(fbUser)
-        await loadAppUser(fbUser.uid)
+        await loadAppUser(fbUser)
       } else {
         void clearSession()
         setAppUser(null)

@@ -1,5 +1,5 @@
 import { initializeApp, getApps, getApp } from 'firebase/app'
-import { getFirestore } from 'firebase/firestore'
+import { initializeFirestore, getFirestore } from 'firebase/firestore'
 import { getAuth } from 'firebase/auth'
 import { getStorage } from 'firebase/storage'
 
@@ -16,7 +16,19 @@ const firebaseConfig = {
 // Initialize Firebase app (singleton)
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp()
 
-export const db      = getFirestore(app)
+// Auto-detect long-polling: Firestore's default WebChannel/gRPC streaming gets
+// blocked by restrictive networks (corporate/institutional WiFi, proxies,
+// some VPNs), which makes reads hang forever instead of resolving. Long-polling
+// tunnels through those and is auto-selected only when needed, so it addresses
+// the network stalls at the source. Guarded so HMR (which re-runs this module)
+// doesn't throw "already initialized".
+export const db = (() => {
+  try {
+    return initializeFirestore(app, { experimentalAutoDetectLongPolling: true })
+  } catch {
+    return getFirestore(app)
+  }
+})()
 export const auth    = getAuth(app)
 export const storage = getStorage(app)
 
