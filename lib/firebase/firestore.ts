@@ -11,13 +11,14 @@ import type { Review, ReviewFormData } from '@/lib/types/review'
 import type { AppUser } from '@/lib/types/user'
 import type { AppNotification } from '@/lib/types/notification'
 import { uniqueSlug, normalizeText } from '@/lib/utils/formatters'
+import { withTimeout, READ_TIMEOUT_MS } from '@/lib/utils/withTimeout'
 
 // ─── HELPERS ────────────────────────────────────────────────────────────────
 
 // ─── USERS ──────────────────────────────────────────────────────────────────
 
 export async function getUserById(uid: string): Promise<AppUser | null> {
-  const snap = await getDoc(doc(db, 'users', uid))
+  const snap = await withTimeout(getDoc(doc(db, 'users', uid)), READ_TIMEOUT_MS, 'getUserById')
   return snap.exists() ? ({ id: snap.id, ...snap.data() } as AppUser) : null
 }
 
@@ -29,14 +30,14 @@ export async function updateUserProfile(uid: string, data: Partial<AppUser>) {
 
 export async function getBusinessBySlug(slug: string): Promise<Business | null> {
   const q = query(collection(db, 'businesses'), where('slug', '==', slug), limit(1))
-  const snap = await getDocs(q)
+  const snap = await withTimeout(getDocs(q), READ_TIMEOUT_MS, 'getBusinessBySlug')
   if (snap.empty) return null
   const d = snap.docs[0]
   return { id: d.id, ...d.data() } as Business
 }
 
 export async function getBusinessById(id: string): Promise<Business | null> {
-  const snap = await getDoc(doc(db, 'businesses', id))
+  const snap = await withTimeout(getDoc(doc(db, 'businesses', id)), READ_TIMEOUT_MS, 'getBusinessById')
   return snap.exists() ? ({ id: snap.id, ...snap.data() } as Business) : null
 }
 
@@ -56,7 +57,7 @@ export async function getBusinesses(opts: {
   if (zone) constraints.push(where('zone', '==', zone))
   if (cursor) constraints.push(startAfter(cursor))
 
-  const snap = await getDocs(query(collection(db, 'businesses'), ...constraints))
+  const snap = await withTimeout(getDocs(query(collection(db, 'businesses'), ...constraints)), READ_TIMEOUT_MS, 'getBusinesses')
   return {
     businesses: snap.docs.map(d => ({ id: d.id, ...d.data() } as Business)),
     lastDoc: snap.docs[snap.docs.length - 1] ?? null,
@@ -100,7 +101,7 @@ export async function getPostsByBusiness(businessId: string, pageSize = 12, curs
     limit(pageSize),
   ]
   if (cursor) constraints.push(startAfter(cursor))
-  const snap = await getDocs(query(collection(db, 'posts'), ...constraints))
+  const snap = await withTimeout(getDocs(query(collection(db, 'posts'), ...constraints)), READ_TIMEOUT_MS, 'getPosts')
   return {
     posts: snap.docs.map(d => ({ id: d.id, ...d.data() } as Post)),
     lastDoc: snap.docs[snap.docs.length - 1] ?? null,
@@ -118,7 +119,7 @@ export async function getPosts(opts: {
   ]
   if (category) constraints.push(where('category', '==', category))
   if (cursor) constraints.push(startAfter(cursor))
-  const snap = await getDocs(query(collection(db, 'posts'), ...constraints))
+  const snap = await withTimeout(getDocs(query(collection(db, 'posts'), ...constraints)), READ_TIMEOUT_MS, 'getPosts')
   return {
     posts: snap.docs.map(d => ({ id: d.id, ...d.data() } as Post)),
     lastDoc: snap.docs[snap.docs.length - 1] ?? null,
@@ -153,7 +154,7 @@ export async function getReviews(businessId: string, pageSize = 10, cursor?: Doc
     limit(pageSize),
   ]
   if (cursor) constraints.push(startAfter(cursor))
-  const snap = await getDocs(query(collection(db, 'businesses', businessId, 'reviews'), ...constraints))
+  const snap = await withTimeout(getDocs(query(collection(db, 'businesses', businessId, 'reviews'), ...constraints)), READ_TIMEOUT_MS, 'getReviews')
   return {
     reviews: snap.docs.map(d => ({ id: d.id, ...d.data() } as Review)),
     lastDoc: snap.docs[snap.docs.length - 1] ?? null,
@@ -246,7 +247,7 @@ export async function searchPosts(opts: {
   ]
   if (category) constraints.push(where('category', '==', category))
 
-  const snap = await getDocs(query(collection(db, 'posts'), ...constraints))
+  const snap = await withTimeout(getDocs(query(collection(db, 'posts'), ...constraints)), READ_TIMEOUT_MS, 'getPosts')
   let results = snap.docs.map(d => ({ id: d.id, ...d.data() } as Post))
 
   if (q?.trim()) {
@@ -275,19 +276,19 @@ export async function toggleFavorite(userId: string, businessId: string, isFav: 
 // users/{uid}/notifications; the client reads them and marks them as read.
 
 export async function getNotifications(userId: string, pageSize = 50): Promise<AppNotification[]> {
-  const snap = await getDocs(query(
+  const snap = await withTimeout(getDocs(query(
     collection(db, 'users', userId, 'notifications'),
     orderBy('createdAt', 'desc'),
     limit(pageSize),
-  ))
+  )), READ_TIMEOUT_MS, 'getNotifications')
   return snap.docs.map(d => ({ id: d.id, ...d.data() } as AppNotification))
 }
 
 export async function getUnreadNotificationsCount(userId: string): Promise<number> {
-  const snap = await getCountFromServer(query(
+  const snap = await withTimeout(getCountFromServer(query(
     collection(db, 'users', userId, 'notifications'),
     where('read', '==', false),
-  ))
+  )), READ_TIMEOUT_MS, 'getUnreadNotificationsCount')
   return snap.data().count
 }
 

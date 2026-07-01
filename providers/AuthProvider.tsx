@@ -4,6 +4,7 @@ import { type User } from 'firebase/auth'
 import { onAuthChange, syncSession, clearSession, logout, createUserDocument } from '@/lib/firebase/auth'
 import { getUserById } from '@/lib/firebase/firestore'
 import { initAppCheck } from '@/lib/firebase/config'
+import { withTimeout } from '@/lib/utils/withTimeout'
 import { useStore } from '@/lib/store/useStore'
 import { toast } from 'sonner'
 import type { AppUser } from '@/lib/types/user'
@@ -29,14 +30,6 @@ const AuthContext = createContext<AuthContextType>({
 // used to freeze the whole app (Settings stuck on a skeleton, navbar stuck on
 // the logged-out state). Bounding it guarantees `loading` always resolves.
 const PROFILE_LOAD_TIMEOUT_MS = 12000
-function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
-  return Promise.race([
-    p,
-    new Promise<T>((_, reject) =>
-      setTimeout(() => reject(new Error('profile-load-timeout')), ms),
-    ),
-  ])
-}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [firebaseUser, setFirebaseUser] = useState<User | null>(null)
