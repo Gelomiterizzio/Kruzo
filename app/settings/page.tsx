@@ -17,7 +17,7 @@ const TABS = [
 ]
 
 export default function SettingsPage() {
-  const { user, signOut } = useAuth()
+  const { user, loading, signOut, refreshUser } = useAuth()
   const router = useRouter()
   const [tab, setTab] = useState('profile')
   const [confirmDelete, setConfirmDelete] = useState(false)
@@ -61,8 +61,17 @@ export default function SettingsPage() {
           ))}
         </div>
 
-        {!user ? (
+        {loading ? (
           <div className="h-64 bg-muted rounded-2xl animate-pulse" />
+        ) : !user ? (
+          <div className="text-center py-16 px-4">
+            <p className="font-semibold mb-1">No pudimos cargar tu perfil</p>
+            <p className="text-sm text-muted-foreground mb-5">Revisa tu conexión e inténtalo de nuevo.</p>
+            <div className="flex gap-2 justify-center">
+              <button onClick={() => refreshUser()} className="px-4 py-2 bg-primary text-white rounded-xl text-sm font-medium hover:bg-primary/90 transition-colors">Reintentar</button>
+              <button onClick={handleLogout} className="px-4 py-2 border border-border rounded-xl text-sm font-medium hover:bg-accent transition-colors">Cerrar sesión</button>
+            </div>
+          </div>
         ) : (
           <div key={user.id}>
             {tab === 'profile' && (

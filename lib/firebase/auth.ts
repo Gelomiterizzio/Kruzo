@@ -80,6 +80,10 @@ export async function signInWithGoogle() {
 
 export async function signInWithEmail(email: string, password: string) {
   const result = await signInWithEmailAndPassword(auth, email, password)
+  // Ensure the profile exists (idempotent). Symmetric with Google/register:
+  // an account whose users/{uid} doc is missing (failed sign-up write, legacy
+  // Auth-only user) self-heals on login instead of staying profile-less.
+  await createUserDocument(result.user)
   await syncSession(result.user)
   return result.user
 }
