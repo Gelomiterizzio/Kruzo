@@ -95,7 +95,10 @@ service cloud.firestore {
         || (isAuth()
             && notBanned()
             && request.resource.data.ownerId == request.auth.uid
-            && get(/databases/$(database)/documents/businesses/$(request.resource.data.businessId)).data.ownerId == request.auth.uid);
+            // Posting requires owning the target business AND it being approved
+            // (status 'active') — a pending/suspended/rejected business cannot publish.
+            && get(/databases/$(database)/documents/businesses/$(request.resource.data.businessId)).data.ownerId == request.auth.uid
+            && get(/databases/$(database)/documents/businesses/$(request.resource.data.businessId)).data.status == 'active');
       // Owners edit their post content and may soft-delete it, but cannot
       // reactivate a post an admin paused/removed (status may only stay the
       // same or become 'deleted') nor forge counters/recency.

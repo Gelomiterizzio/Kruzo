@@ -48,6 +48,11 @@ await testEnv.withSecurityRulesDisabled(async (ctx) => {
     ownerId: 'bob', name: 'Bob Biz', status: 'active',
     isFeatured: false, isVerified: false, createdAt: new Date('2026-01-01'),
   })
+  // Stays pending for the whole suite (used to prove pending businesses can't post).
+  await setDoc(doc(db, 'businesses/biz-alice-pending2'), {
+    ownerId: 'alice', name: 'Alice Pending 2', status: 'pending',
+    isFeatured: false, isVerified: false, createdAt: new Date('2026-01-01'),
+  })
 
   await setDoc(doc(db, 'posts/post-alice-active'), {
     ownerId: 'alice', businessId: 'biz-alice', title: 'Activo',
@@ -155,9 +160,13 @@ await expectAllowed('admin aprueba negocio (pending → active)',
 
 // ─── POSTS: dueño real sí, moderación intocable ─────────────────────────────
 section('POSTS')
-await expectAllowed('alice publica en su propio negocio',
+await expectAllowed('alice publica en su propio negocio (aprobado/active)',
   setDoc(doc(alice, 'posts/post-new'), {
     ownerId: 'alice', businessId: 'biz-alice', title: 'Torta', status: 'active',
+  }))
+await expectDenied('alice publica en su negocio PENDIENTE (no aprobado)',
+  setDoc(doc(alice, 'posts/post-pending-biz'), {
+    ownerId: 'alice', businessId: 'biz-alice-pending2', title: 'Adelanto', status: 'active',
   }))
 await expectDenied('bob publica en el negocio de alice',
   setDoc(doc(bob, 'posts/post-intruso'), {
