@@ -6,8 +6,8 @@
  *   • onReviewWritten        → reviewCount, rating (avg), ratingDistribution
  *                              + notifies the business owner of new reviews
  *   • onUserFavoritesWritten → favoriteCount
- *   • onBusinessWritten      → links businessIds to the owner, promotes them
- *                              to entrepreneur, notifies on approval
+ *   • onBusinessWritten      → links the business to the owner (businessIds),
+ *                              notifies on approval
  *   • deleteAccount (callable)→ Play/Apple-compliant self-deletion: removes the
  *                              Auth account + user doc, owned businesses/posts and
  *                              authored reviews (privileged Admin-SDK cleanup)
@@ -88,10 +88,10 @@ exports.onUserFavoritesWritten = onDocumentWritten('users/{uid}', async (event) 
   ])
 })
 
-// Business lifecycle: on create, link the business to its owner (the client
-// does the same arrayUnion — both are idempotent) and promote plain users to
-// entrepreneur so role-gated UI lights up. On approval (pending → active),
-// notify the owner.
+// Business lifecycle: on create, link the business to its owner as a resource
+// (the client does the same arrayUnion — both are idempotent). Owning a business
+// is NOT a role, so the user's role is left untouched. On approval
+// (pending → active), notify the owner.
 exports.onBusinessWritten = onDocumentWritten('businesses/{businessId}', async (event) => {
   const before = event.data && event.data.before.exists ? event.data.before.data() : null
   const after = event.data && event.data.after.exists ? event.data.after.data() : null
@@ -103,9 +103,8 @@ exports.onBusinessWritten = onDocumentWritten('businesses/{businessId}', async (
       .runTransaction(async (tx) => {
         const snap = await tx.get(userRef)
         if (!snap.exists) return
-        const update = { businessIds: FieldValue.arrayUnion(event.params.businessId) }
-        if ((snap.get('role') || 'user') === 'user') update.role = 'entrepreneur'
-        tx.update(userRef, update)
+        // Link the business as a resource on the account; the role is unchanged.
+        tx.update(userRef, { businessIds: FieldValue.arrayUnion(event.params.businessId) })
       })
       .catch(() => {})
     return
