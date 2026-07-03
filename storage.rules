@@ -1,10 +1,14 @@
 rules_version = '2';
 
 // Firebase Storage security rules for KRUZO.
-// Storage rules cannot read Firestore, so ownership is enforced at the app
-// layer; here we ensure only signed-in users can upload, only images, and only
-// under a sane size limit (matches the 5MB client limit). Everything not
-// explicitly matched is denied by default.
+//
+// Ownership IS enforced here via cross-service rules: Storage rules read the
+// corresponding Firestore document and only the resource owner (or an admin)
+// may write under its folder. Uploads must be images under 5MB (matches the
+// client-side limit). Everything not explicitly matched is denied by default.
+//
+// Note: both app flows create the Firestore document BEFORE uploading media
+// (BusinessForm / PostForm), so the ownership lookup always has a doc to read.
 service firebase.storage {
   match /b/{bucket}/o {
     function isSignedIn() {
@@ -14,17 +18,30 @@ service firebase.storage {
       return request.resource.contentType.matches('image/.*')
         && request.resource.size < 5 * 1024 * 1024;
     }
+    function isAdminUser() {
+      return firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    function ownsBusiness(businessId) {
+      return firestore.get(/databases/(default)/documents/businesses/$(businessId)).data.ownerId == request.auth.uid;
+    }
+    function ownsPost(postId) {
+      return firestore.get(/databases/(default)/documents/posts/$(postId)).data.ownerId == request.auth.uid;
+    }
 
     // Business media: logo / cover / gallery  (businesses/{id}/{type}/...)
     match /businesses/{businessId}/{allPaths=**} {
       allow read: if true;
-      allow write: if isSignedIn() && isImageUnder5MB();
+      allow create, update: if isSignedIn() && isImageUnder5MB()
+        && (ownsBusiness(businessId) || isAdminUser());
+      allow delete: if isSignedIn() && (ownsBusiness(businessId) || isAdminUser());
     }
 
     // Post media  (posts/{id}/...)
     match /posts/{postId}/{allPaths=**} {
       allow read: if true;
-      allow write: if isSignedIn() && isImageUnder5MB();
+      allow create, update: if isSignedIn() && isImageUnder5MB()
+        && (ownsPost(postId) || isAdminUser());
+      allow delete: if isSignedIn() && (ownsPost(postId) || isAdminUser());
     }
   }
 }

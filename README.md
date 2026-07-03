@@ -51,21 +51,24 @@ app/                      # Next.js App Router
 ├── dashboard/            # panel del emprendedor (protegido)
 ├── admin/                # panel admin (protegido + verificación de rol en servidor)
 ├── api/session/          # mintea/borra la session cookie (Admin SDK)
-├── sitemap.ts            # sitemap dinámico (rutas + negocios activos)
+├── api/account/          # eliminación completa de cuenta (paridad con la política §10)
+├── api/admin/ban/        # ban/unban server-side + revocación de refresh tokens
+├── sitemap.ts            # sitemap dinámico (rutas + negocios y posts activos)
 ├── robots.ts             # robots.txt
-└── layout.tsx            # metadata, OG, PWA, providers
-components/               # business · home · layout · map · post · review · search · shared
+└── layout.tsx            # metadata, OG, PWA, JSON-LD (Organization/WebSite), providers
+components/               # business · home · layout · map · post · review · search · seo · shared
 lib/
 ├── firebase/             # config (Web SDK), admin (server), auth, firestore, storage
 ├── hooks/                # useBusinesses / usePosts / useReviews (React Query) · useAuth · ...
+├── seo/                  # builders de schema.org (LocalBusiness, Product, Breadcrumb…)
 ├── store/                # Zustand
 ├── types/                # modelos de dominio
 └── utils/                # constants (única fuente de verdad: zonas/categorías) · formatters · ...
 providers/                # Theme · Auth · Query
-middleware.ts             # redirecciones de auth por session cookie
-firestore.rules           # reglas de seguridad (desplegadas)
+proxy.ts                  # (Next 16, ex-middleware) redirecciones de auth por session cookie
+firestore.rules           # reglas de seguridad (suite: npm run test:rules)
 firestore.indexes.json    # índices compuestos
-storage.rules             # reglas de Storage
+storage.rules             # reglas de Storage (ownership cross-service vía Firestore)
 ```
 
 **Decisiones clave**
@@ -152,10 +155,12 @@ La cuenta de servicio del Admin SDK es **obligatoria**: sin ella no se pueden em
 
 ## 🚀 Deploy (Vercel)
 
-1. Importá el repo en [vercel.com](https://vercel.com) (framework Next.js autodetectado).
-2. Cargá las variables de entorno (públicas y secretas) en **Project → Settings → Environment Variables**.
-3. Deploy. Los headers de seguridad (incluida la CSP de producción) se aplican desde `next.config.mjs`.
-4. Desplegá las reglas/índices de Firestore y Storage (`npm run firebase:deploy-rules`, `firebase deploy --only storage`).
+Runbook completo y ordenado (reglas, funciones, envs, dominios, App Check,
+primer admin y smoke test): **[docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md)**.
+
+Resumen: importá el repo en Vercel → cargá las variables de entorno → deploy.
+Los headers de seguridad (incluida la CSP de producción) salen de
+`next.config.mjs`; reglas/índices/funciones se despliegan con la Firebase CLI.
 
 ---
 
@@ -168,10 +173,19 @@ La cuenta de servicio del Admin SDK es **obligatoria**: sin ella no se pueden em
 
 ## 🛡️ Seguridad
 
-- Session cookies httpOnly + verificación de rol admin en servidor.
+- **PII privada:** la colección `users` (email, teléfono, preferencias) solo la
+  lee su dueño o un admin; los perfiles públicos se sirven por Admin SDK con
+  proyección explícita de campos públicos.
+- Session cookies httpOnly + verificación de rol admin en servidor; el ban
+  revoca los refresh tokens (las sesiones activas mueren de inmediato).
+- Eliminación de cuenta completa (negocios, posts y reseñas) en paridad con la
+  política de privacidad y con la app móvil.
+- Storage con **ownership real**: las reglas validan `ownerId` contra Firestore
+  (cross-service) — nadie puede subir a carpetas ajenas.
 - CSP estricta en producción y cabeceras de seguridad centralizadas en `next.config.mjs`.
-- Reglas de Firestore/Storage en producción (favoritos y reseñas acotados; una reseña por usuario).
+- Reglas de Firestore probadas en emulador: `npm run test:rules` (67 casos).
 - Popups del mapa sanitizados (HTML-escaping) — sin XSS almacenado.
+- Formulario de contacto con shape bloqueado en reglas + honeypot anti-bots.
 - Firebase App Check (opcional) para mitigar tráfico no autenticado/bots.
 
 ---

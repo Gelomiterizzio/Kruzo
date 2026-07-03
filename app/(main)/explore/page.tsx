@@ -10,6 +10,7 @@ import { getCategoryInfo } from '@/components/shared/CategoryBadge'
 export const metadata: Metadata = {
   title: 'Explorar negocios',
   description: 'Descubre todos los negocios y emprendimientos de Santa Cruz de la Sierra.',
+  alternates: { canonical: '/explore' },
 }
 
 // Next.js 16: searchParams is now a Promise.

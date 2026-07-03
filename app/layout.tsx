@@ -6,6 +6,8 @@ import { QueryProvider } from '@/providers/QueryProvider'
 import { MotionProvider } from '@/providers/MotionProvider'
 import { ServiceWorkerRegister } from '@/components/shared/ServiceWorkerRegister'
 import { AdSenseScript } from '@/components/ads/AdSenseScript'
+import { JsonLd } from '@/components/seo/JsonLd'
+import { organizationSchema, webSiteSchema } from '@/lib/seo/schema'
 import { Toaster } from 'sonner'
 import './globals.css'
 
@@ -76,6 +78,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="es" suppressHydrationWarning>
       <body className={`${dmSans.variable} ${syne.variable} font-sans min-h-screen`}>
+        <JsonLd data={organizationSchema()} />
+        <JsonLd data={webSiteSchema()} />
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[200] focus:px-4 focus:py-2.5 focus:bg-primary focus:text-white focus:rounded-xl focus:text-sm focus:font-semibold focus:shadow-lg"
+        >
+          Saltar al contenido principal
+        </a>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"

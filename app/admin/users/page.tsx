@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
+import Image from 'next/image'
 import { collection, query, orderBy, limit, getDocs, doc, updateDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase/config'
 import type { AppUser } from '@/lib/types/user'
@@ -40,10 +41,17 @@ export default function AdminUsersPage() {
 
   const toggleBan = async (uid: string, banned: boolean) => {
     try {
-      await updateDoc(doc(db, 'users', uid), { isBanned: !banned })
+      // Server-side: besides flipping isBanned, banning also revokes the
+      // user's refresh tokens so their active sessions die immediately.
+      const res = await fetch('/api/admin/ban', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ uid, banned: !banned }),
+      })
+      if (!res.ok) throw new Error()
       setUsers(prev => prev.map(u => u.id === uid ? { ...u, isBanned: !banned } : u))
       toast.success(!banned ? 'Usuario suspendido' : 'Usuario reactivado')
-    } catch { toast.error('Error') }
+    } catch { toast.error('Error al actualizar') }
   }
 
   return (
@@ -62,7 +70,7 @@ export default function AdminUsersPage() {
             return (
               <div key={u.id} className={`flex items-center gap-3 p-3 bg-card border rounded-2xl transition-all ${u.isBanned ? 'opacity-50 border-destructive/30' : 'border-border'}`}>
                 {u.photoURL
-                  ? <img src={u.photoURL} alt="" className="w-9 h-9 rounded-xl object-cover shrink-0" />
+                  ? <Image src={u.photoURL} alt="" width={36} height={36} className="w-9 h-9 rounded-xl object-cover shrink-0" />
                   : <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center text-xs font-bold shrink-0">{getInitials(u.displayName || 'U')}</div>
                 }
                 <div className="flex-1 min-w-0">

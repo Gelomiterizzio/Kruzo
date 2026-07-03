@@ -1,6 +1,8 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
 import { MapPin, Loader2 } from 'lucide-react'
+// Type-only import: erased at compile time, so leaflet never loads during SSR.
+import type { Map as LeafletMap } from 'leaflet'
 import type { Business } from '@/lib/types/business'
 import { escapeHtml } from '@/lib/utils/formatters'
 
@@ -16,7 +18,7 @@ const SCZ = { lat: -17.7863, lng: -63.1812 }
 
 export function BusinessMap({ businesses = [], center, zoom = 13, single, height = '400px' }: Props) {
   const mapRef = useRef<HTMLDivElement>(null)
-  const mapInstance = useRef<any>(null)
+  const mapInstance = useRef<LeafletMap | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
 
@@ -39,8 +41,8 @@ export function BusinessMap({ businesses = [], center, zoom = 13, single, height
       try {
         const L = (await import('leaflet')).default
 
-        // Fix default icons
-        delete (L.Icon.Default.prototype as any)._getIconUrl
+        // Fix default icons (leaflet's private _getIconUrl breaks under bundlers)
+        delete (L.Icon.Default.prototype as unknown as Record<string, unknown>)._getIconUrl
         L.Icon.Default.mergeOptions({
           iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
           iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
@@ -100,6 +102,9 @@ export function BusinessMap({ businesses = [], center, zoom = 13, single, height
       mapInstance.current?.remove()
       mapInstance.current = null
     }
+    // Mount-only by design: Leaflet owns the DOM node after init, so the map
+    // must never re-initialize when props change (markers are set once here).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   if (error) return (

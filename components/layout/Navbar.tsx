@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -163,6 +164,7 @@ export function Navbar() {
 
               <Link
                 href="/favorites"
+                aria-label="Favoritos"
                 className={cn('p-2 rounded-xl transition-colors', pathname === '/favorites' ? 'bg-accent' : 'hover:bg-accent/70')}
               >
                 <Heart size={19} className={pathname === '/favorites' ? 'fill-red-500 text-red-500' : ''} />
@@ -183,10 +185,13 @@ export function Navbar() {
               <div className="relative" data-user-menu>
                 <button
                   onClick={(e) => { e.stopPropagation(); setUserMenuOpen(!userMenuOpen) }}
+                  aria-label="Menú de usuario"
+                  aria-haspopup="menu"
+                  aria-expanded={userMenuOpen}
                   className="flex items-center gap-1.5 p-1 rounded-xl hover:bg-accent/70 transition-colors"
                 >
                   {user.photoURL ? (
-                    <img src={user.photoURL} alt="" className="w-8 h-8 rounded-xl object-cover ring-2 ring-border" />
+                    <Image src={user.photoURL} alt="" width={32} height={32} className="w-8 h-8 rounded-xl object-cover ring-2 ring-border" />
                   ) : (
                     <div className="w-8 h-8 rounded-xl bg-primary/15 text-primary flex items-center justify-center text-xs font-bold">
                       {getInitials(user.displayName || 'U')}
@@ -255,6 +260,7 @@ export function Navbar() {
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             className="lg:hidden p-2 rounded-xl hover:bg-accent/70 transition-colors"
             aria-label="Menú"
+            aria-expanded={isMobileMenuOpen}
           >
             <AnimatePresence mode="wait" initial={false}>
               {isMobileMenuOpen ? (

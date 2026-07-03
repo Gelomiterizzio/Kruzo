@@ -9,6 +9,8 @@ import type { SearchSort } from '@/lib/firebase/firestore'
 export const metadata: Metadata = {
   title: 'Buscar',
   description: 'Busca negocios, servicios y productos en Santa Cruz de la Sierra.',
+  // Parameterized result pages canonicalize to the clean search page.
+  alternates: { canonical: '/search' },
 }
 
 // ── Next.js 16: searchParams is now a Promise ─────────────────────────────────

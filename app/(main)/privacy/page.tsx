@@ -4,10 +4,11 @@ export const metadata: Metadata = {
   title: "Política de privacidad",
   description:
     "Política de privacidad oficial de KRUZO: qué datos recopilamos, cómo los usamos, cómo los protegemos y cómo eliminar tu cuenta.",
+  alternates: { canonical: "/privacy" },
 };
 
 // ── Datos de contacto / responsable ─────────────────────────────────────────
-// TODO(owner): confirmar antes de publicar. El buzón debe existir de verdad.
+// El alta del buzón es un paso del runbook de lanzamiento (docs/DEPLOYMENT.md §6).
 const CONTACT_EMAIL = "hola@kruzo.bo";
 const LAST_UPDATED = "14 de junio de 2026";
 

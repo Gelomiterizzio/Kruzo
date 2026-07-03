@@ -1,6 +1,6 @@
 import { initializeApp, getApps, getApp, cert, type App, type ServiceAccount } from 'firebase-admin/app'
 import { getAuth } from 'firebase-admin/auth'
-import { getFirestore, FieldValue } from 'firebase-admin/firestore'
+import { getFirestore, FieldValue, type Timestamp } from 'firebase-admin/firestore'
 import { cookies } from 'next/headers'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -94,6 +94,49 @@ export async function incrementBusinessView(businessId: string): Promise<void> {
     })
   } catch {
     /* non-fatal */
+  }
+}
+
+// ─── Public user profiles ─────────────────────────────────────────────────────
+// The users collection is PRIVATE (email, phone, notification preferences…)
+// and its Firestore rules only allow the owner/admins to read it. Public
+// profile pages therefore go through this explicit server-side projection:
+// only the fields listed here can ever reach a public page.
+
+export interface PublicUserProfile {
+  id: string
+  displayName: string
+  photoURL: string
+  bio: string
+  location: string
+  isVerified: boolean
+  businessCount: number
+  createdAt: Timestamp | null
+}
+
+/**
+ * Returns the PUBLIC subset of a user profile, or null when the user does not
+ * exist, is banned, or the Admin SDK is not configured. Never returns private
+ * fields (email, phone, favorites, notification settings, ban details…).
+ */
+export async function getPublicUserProfile(uid: string): Promise<PublicUserProfile | null> {
+  try {
+    const snap = await adminDb().collection('users').doc(uid).get()
+    if (!snap.exists) return null
+    const d = snap.data() ?? {}
+    if (d.isBanned === true) return null
+    return {
+      id: snap.id,
+      displayName: (d.displayName as string) || '',
+      photoURL: (d.photoURL as string) || '',
+      bio: (d.bio as string) || '',
+      location: (d.location as string) || '',
+      isVerified: d.isVerified === true,
+      businessCount: Array.isArray(d.businessIds) ? d.businessIds.length : 0,
+      createdAt: (d.createdAt as Timestamp | undefined) ?? null,
+    }
+  } catch {
+    return null
   }
 }
 

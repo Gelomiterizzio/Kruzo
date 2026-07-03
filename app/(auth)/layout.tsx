@@ -2,7 +2,12 @@ import Link from 'next/link'
 import type { Metadata } from 'next'
 import { CheckCircle2 } from 'lucide-react'
 
-export const metadata: Metadata = { title: 'Acceso' }
+// Auth pages are private surfaces: robots.txt already disallows them and the
+// meta tag makes the exclusion explicit for crawlers that land via links.
+export const metadata: Metadata = {
+  title: 'Acceso',
+  robots: { index: false, follow: false },
+}
 
 const VALUE_PROPS = [
   'Registro y publicación gratis',
@@ -35,7 +40,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         <p className="text-white/40 text-sm">© {new Date().getFullYear()} KRUZO</p>
       </div>
       {/* Right panel */}
-      <div className="flex flex-col justify-center px-6 py-12 sm:px-12">
+      <main id="main-content" className="flex flex-col justify-center px-6 py-12 sm:px-12">
         <div className="lg:hidden mb-8">
           <Link href="/" className="flex items-center gap-2 font-display font-black text-xl">
             <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-white text-sm">K</div>
@@ -43,7 +48,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           </Link>
         </div>
         <div className="max-w-sm mx-auto w-full">{children}</div>
-      </div>
+      </main>
     </div>
   )
 }

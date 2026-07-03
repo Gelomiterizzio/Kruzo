@@ -3,9 +3,10 @@ import React from 'react'
 import { AlertTriangle, RefreshCw } from 'lucide-react'
 
 interface State { hasError: boolean; error?: Error }
+interface Props { children: React.ReactNode; fallback?: React.ReactNode }
 
-export class ErrorBoundary extends React.Component<{ children: React.ReactNode; fallback?: React.ReactNode }, State> {
-  constructor(props: any) {
+export class ErrorBoundary extends React.Component<Props, State> {
+  constructor(props: Props) {
     super(props)
     this.state = { hasError: false }
   }

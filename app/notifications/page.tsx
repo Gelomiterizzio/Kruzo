@@ -40,7 +40,7 @@ export default function NotificationsPage() {
   return (
     <>
       <Navbar />
-      <div className="container max-w-xl pt-20 pb-16 space-y-5">
+      <main id="main-content" className="container max-w-xl pt-20 pb-16 space-y-5">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-display font-bold flex items-center gap-2"><Bell size={22} /> Notificaciones</h1>
@@ -100,7 +100,7 @@ export default function NotificationsPage() {
             })}
           </div>
         )}
-      </div>
+      </main>
     </>
   )
 }

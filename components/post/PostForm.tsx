@@ -27,8 +27,8 @@ interface Props { business: Business; existing?: Post }
 
 // Hoisted out of the component: an inline definition gets a new identity every
 // render, remounting the subtree and making inputs drop focus while typing.
-const Field = ({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) => (
-  <div><label className="block text-sm font-medium mb-1.5">{label}</label>{children}{error && <p className="text-xs text-destructive mt-1">{error}</p>}</div>
+const Field = ({ label, error, htmlFor, children }: { label: string; error?: string; htmlFor?: string; children: React.ReactNode }) => (
+  <div><label htmlFor={htmlFor} className="block text-sm font-medium mb-1.5">{label}</label>{children}{error && <p className="text-xs text-destructive mt-1">{error}</p>}</div>
 )
 
 const inputCls = 'w-full px-3 py-2.5 text-sm bg-muted border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary'
@@ -111,21 +111,21 @@ export function PostForm({ business, existing }: Props) {
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 max-w-xl">
       <div className="p-5 bg-card border border-border rounded-2xl space-y-4">
         <h2 className="font-semibold">Información del producto/servicio</h2>
-        <Field label="Título *" error={errors.title?.message}>
-          <input {...register('title')} placeholder="Ej: Torta de chocolate personalizada" className={inputCls} />
+        <Field label="Título *" htmlFor="post-title" error={errors.title?.message}>
+          <input id="post-title" {...register('title')} placeholder="Ej: Torta de chocolate personalizada" className={inputCls} />
         </Field>
-        <Field label="Descripción *" error={errors.description?.message}>
-          <textarea {...register('description')} rows={3} placeholder="Describe el producto, detalles, materiales…" className={`${inputCls} resize-none`} />
+        <Field label="Descripción *" htmlFor="post-description" error={errors.description?.message}>
+          <textarea id="post-description" {...register('description')} rows={3} placeholder="Describe el producto, detalles, materiales…" className={`${inputCls} resize-none`} />
         </Field>
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Categoría *" error={errors.category?.message}>
-            <select {...register('category')} className={inputCls}>
+          <Field label="Categoría *" htmlFor="post-category" error={errors.category?.message}>
+            <select id="post-category" {...register('category')} className={inputCls}>
               <option value="">Seleccionar…</option>
               {CATEGORIES.map(c => <option key={c.key} value={c.key}>{c.label}</option>)}
             </select>
           </Field>
-          <Field label="Etiquetas">
-            <input {...register('tags')} placeholder="cumpleaños, encargo, decorado" className={inputCls} />
+          <Field label="Etiquetas" htmlFor="post-tags">
+            <input id="post-tags" {...register('tags')} placeholder="cumpleaños, encargo, decorado" className={inputCls} />
           </Field>
         </div>
       </div>
@@ -133,8 +133,8 @@ export function PostForm({ business, existing }: Props) {
       <div className="p-5 bg-card border border-border rounded-2xl space-y-4">
         <h2 className="font-semibold">Precio</h2>
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Tipo de precio" error={errors.priceType?.message}>
-            <select {...register('priceType')} className={inputCls}>
+          <Field label="Tipo de precio" htmlFor="post-price-type" error={errors.priceType?.message}>
+            <select id="post-price-type" {...register('priceType')} className={inputCls}>
               <option value="fixed">Precio fijo</option>
               <option value="negotiable">Negociable</option>
               <option value="free">Gratis</option>
@@ -142,31 +142,31 @@ export function PostForm({ business, existing }: Props) {
             </select>
           </Field>
           {priceType !== 'free' && priceType !== 'consult' && (
-            <Field label="Precio (Bs.) *" error={errors.price?.message}>
-              <input {...register('price', { valueAsNumber: true })} type="number" min="0" placeholder="0.00" className={inputCls} />
+            <Field label="Precio (Bs.) *" htmlFor="post-price" error={errors.price?.message}>
+              <input id="post-price" {...register('price', { valueAsNumber: true })} type="number" min="0" placeholder="0.00" className={inputCls} />
             </Field>
           )}
         </div>
         {priceType === 'fixed' && (
-          <Field label="Precio original (opcional, para mostrar descuento)">
-            <input {...register('originalPrice', { valueAsNumber: true })} type="number" min="0" placeholder="0.00" className={inputCls} />
+          <Field label="Precio original (opcional, para mostrar descuento)" htmlFor="post-original-price">
+            <input id="post-original-price" {...register('originalPrice', { valueAsNumber: true })} type="number" min="0" placeholder="0.00" className={inputCls} />
           </Field>
         )}
 
         <div className="flex items-center justify-between p-3 bg-muted rounded-xl">
-          <div>
+          <label htmlFor="post-has-delivery" className="cursor-pointer">
             <p className="text-sm font-medium">¿Tiene delivery?</p>
             <p className="text-xs text-muted-foreground">Entregas a domicilio</p>
-          </div>
-          <input {...register('hasDelivery')} type="checkbox" className="w-5 h-5 rounded accent-primary" />
+          </label>
+          <input id="post-has-delivery" {...register('hasDelivery')} type="checkbox" className="w-5 h-5 rounded accent-primary" />
         </div>
         {hasDelivery && (
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Costo de delivery (Bs.)">
-              <input {...register('deliveryPrice', { valueAsNumber: true })} type="number" min="0" className={inputCls} />
+            <Field label="Costo de delivery (Bs.)" htmlFor="post-delivery-price">
+              <input id="post-delivery-price" {...register('deliveryPrice', { valueAsNumber: true })} type="number" min="0" className={inputCls} />
             </Field>
-            <Field label="Zonas de delivery">
-              <input {...register('deliveryZones')} placeholder="Norte, Sur, Plan 3000" className={inputCls} />
+            <Field label="Zonas de delivery" htmlFor="post-delivery-zones">
+              <input id="post-delivery-zones" {...register('deliveryZones')} placeholder="Norte, Sur, Plan 3000" className={inputCls} />
             </Field>
           </div>
         )}
@@ -176,8 +176,8 @@ export function PostForm({ business, existing }: Props) {
         <h2 className="font-semibold">Imágenes *</h2>
         <ImageUpload value={imageFiles} onChange={setImageFiles} maxFiles={5} label="Hasta 5 imágenes del producto"
           preview={existing?.images ?? []} />
-        <Field label="Mensaje de WhatsApp personalizado (opcional)">
-          <input {...register('whatsappMessage')} placeholder="Hola, me interesa este producto…" className={inputCls} />
+        <Field label="Mensaje de WhatsApp personalizado (opcional)" htmlFor="post-whatsapp-message">
+          <input id="post-whatsapp-message" {...register('whatsappMessage')} placeholder="Hola, me interesa este producto…" className={inputCls} />
         </Field>
       </div>
 

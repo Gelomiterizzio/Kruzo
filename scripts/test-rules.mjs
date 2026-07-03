@@ -17,7 +17,7 @@ import {
   assertFails,
 } from '@firebase/rules-unit-testing'
 import {
-  doc, setDoc, getDoc, updateDoc, arrayUnion,
+  doc, setDoc, getDoc, getDocs, updateDoc, arrayUnion, collection,
 } from 'firebase/firestore'
 
 const testEnv = await initializeTestEnvironment({
@@ -99,6 +99,23 @@ async function expectDenied(name, promise) {
 }
 const section = (t) => lines.push(`\n— ${t} —`)
 
+// ─── USERS: PII privada — solo el dueño y admins leen el doc ────────────────
+section('USERS · PRIVACIDAD (PII)')
+await expectDenied('anónimo lee el perfil de alice (email/teléfono privados)',
+  getDoc(doc(anon, 'users/alice')))
+await expectDenied('bob lee el perfil de alice (otro usuario)',
+  getDoc(doc(bob, 'users/alice')))
+await expectDenied('anónimo lista la colección de usuarios (scraping)',
+  getDocs(collection(anon, 'users')))
+await expectDenied('bob lista la colección de usuarios',
+  getDocs(collection(bob, 'users')))
+await expectAllowed('alice lee su propio perfil',
+  getDoc(doc(alice, 'users/alice')))
+await expectAllowed('admin lee cualquier perfil (moderación)',
+  getDoc(doc(admin, 'users/bob')))
+await expectAllowed('admin lista la colección de usuarios',
+  getDocs(collection(admin, 'users')))
+
 // ─── USERS: perfil propio sí, privilegios no ────────────────────────────────
 section('USERS')
 await expectAllowed('alice edita su displayName/bio',
@@ -113,8 +130,8 @@ await expectDenied('alice se auto-verifica',
   updateDoc(doc(alice, 'users/alice'), { isVerified: true }))
 await expectDenied('bob edita el perfil de alice',
   updateDoc(doc(bob, 'users/alice'), { displayName: 'Hackeado' }))
-await expectAllowed('admin cambia el rol de alice a entrepreneur',
-  updateDoc(doc(admin, 'users/alice'), { role: 'entrepreneur' }))
+await expectAllowed('admin edita campos privilegiados de un usuario (rol/verificación)',
+  updateDoc(doc(admin, 'users/alice'), { role: 'user', isVerified: true }))
 await expectAllowed('usuario nuevo crea su doc (role user, sin flags)',
   setDoc(doc(testEnv.authenticatedContext('newbie').firestore(), 'users/newbie'),
     { role: 'user', isBanned: false, isVerified: false, displayName: 'Newbie' }))
@@ -208,6 +225,22 @@ await expectDenied('bob toca flags de moderación (isHidden)',
 await expectAllowed('admin oculta una reseña reportada',
   updateDoc(doc(admin, 'businesses/biz-alice/reviews/bob'), { isHidden: true }))
 
+// ─── REVIEWS · OWNER REPLY: responde el dueño del negocio, y solo eso ───────
+section('REVIEWS · RESPUESTA DEL PROPIETARIO')
+await expectAllowed('alice (dueña del negocio) responde la reseña de bob',
+  updateDoc(doc(alice, 'businesses/biz-alice/reviews/bob'),
+    { ownerReply: 'Gracias por tu visita, Bob.', ownerRepliedAt: new Date() }))
+await expectDenied('alice intenta alterar el rating del cliente junto a su respuesta',
+  updateDoc(doc(alice, 'businesses/biz-alice/reviews/bob'),
+    { ownerReply: 'Gracias', rating: 5 }))
+await expectDenied('alice intenta editar el comentario del cliente',
+  updateDoc(doc(alice, 'businesses/biz-alice/reviews/bob'), { comment: 'Editado por el dueño' }))
+await expectDenied('un tercero (carol) escribe una respuesta de propietario',
+  updateDoc(doc(testEnv.authenticatedContext('carol').firestore(),
+    'businesses/biz-alice/reviews/bob'), { ownerReply: 'Soy el dueño (falso)', ownerRepliedAt: new Date() }))
+await expectDenied('respuesta vacía del propietario',
+  updateDoc(doc(alice, 'businesses/biz-alice/reviews/bob'), { ownerReply: '', ownerRepliedAt: new Date() }))
+
 // ─── REPORTS ────────────────────────────────────────────────────────────────
 section('REPORTS')
 await expectAllowed('bob reporta una reseña (reporterId propio)',
@@ -229,10 +262,21 @@ section('CONTACT MESSAGES')
 await expectAllowed('visitante anónimo envía mensaje de contacto válido',
   setDoc(doc(anon, 'contactMessages/m1'), {
     name: 'Visitante', email: 'v@mail.com', message: 'Hola, quiero información sobre KRUZO.',
+    status: 'new', createdAt: new Date(),
   }))
 await expectDenied('mensaje demasiado corto (spam barato)',
   setDoc(doc(anon, 'contactMessages/m2'), {
-    name: 'X', email: 'x@x.co', message: 'hola',
+    name: 'X', email: 'x@x.co', message: 'hola', status: 'new', createdAt: new Date(),
+  }))
+await expectDenied('mensaje con campos extra (shape no permitido)',
+  setDoc(doc(anon, 'contactMessages/m3'), {
+    name: 'Visitante', email: 'v@mail.com', message: 'Hola, quiero información sobre KRUZO.',
+    status: 'new', createdAt: new Date(), injected: 'payload',
+  }))
+await expectDenied('mensaje que no nace en estado new',
+  setDoc(doc(anon, 'contactMessages/m4'), {
+    name: 'Visitante', email: 'v@mail.com', message: 'Hola, quiero información sobre KRUZO.',
+    status: 'resolved', createdAt: new Date(),
   }))
 await expectDenied('usuario normal lee los mensajes de contacto',
   getDoc(doc(bob, 'contactMessages/m1')))

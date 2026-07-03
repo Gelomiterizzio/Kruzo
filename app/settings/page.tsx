@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { Navbar } from '@/components/layout/Navbar'
@@ -45,7 +46,7 @@ export default function SettingsPage() {
   return (
     <>
       <Navbar />
-      <div className="container max-w-2xl pt-20 pb-16 space-y-6">
+      <main id="main-content" className="container max-w-2xl pt-20 pb-16 space-y-6">
         <h1 className="text-2xl font-display font-bold flex items-center gap-2"><Settings size={22} /> Configuración</h1>
 
         <div className="flex gap-1 border-b border-border">
@@ -78,7 +79,7 @@ export default function SettingsPage() {
               <div className="space-y-4">
                 <div className="flex items-center gap-4 p-4 bg-card border border-border rounded-2xl">
                   {user.photoURL
-                    ? <img src={user.photoURL} alt="" className="w-16 h-16 rounded-2xl object-cover" />
+                    ? <Image src={user.photoURL} alt="" width={64} height={64} className="w-16 h-16 rounded-2xl object-cover" />
                     : <div className="w-16 h-16 rounded-2xl bg-primary/10 text-primary flex items-center justify-center text-2xl font-bold">{user.displayName?.[0] ?? 'U'}</div>
                   }
                   <div>
@@ -106,7 +107,7 @@ export default function SettingsPage() {
                 <div className="p-5 bg-card border border-border rounded-2xl">
                   <h2 className="font-semibold mb-2">Eliminar cuenta</h2>
                   <p className="text-sm text-muted-foreground mb-3">
-                    Se elimina tu perfil y acceso de forma permanente. Tus negocios dejarán de ser visibles.
+                    Se eliminan de forma permanente tu perfil, tus negocios con sus publicaciones y las reseñas que escribiste.
                   </p>
                   <button onClick={() => setConfirmDelete(true)}
                     className="flex items-center gap-2 px-4 py-2 bg-destructive text-white rounded-xl text-sm font-medium hover:bg-destructive/90 transition-colors">
@@ -117,13 +118,13 @@ export default function SettingsPage() {
             )}
           </div>
         )}
-      </div>
+      </main>
       <Footer />
 
       <ConfirmDialog
         open={confirmDelete}
         title="¿Eliminar tu cuenta?"
-        description="Esta acción es permanente e irreversible. Tu perfil se elimina y tus negocios dejan de estar visibles en KRUZO."
+        description="Esta acción es permanente e irreversible. Se eliminan tu perfil, tus negocios, tus publicaciones y tus reseñas de KRUZO."
         confirmLabel="Eliminar definitivamente"
         variant="danger"
         loading={deleting}

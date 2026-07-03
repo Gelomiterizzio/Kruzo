@@ -22,7 +22,11 @@ service cloud.firestore {
     // the Admin SDK, which bypass these rules. Clients can never write them.
 
     match /users/{uid} {
-      allow read: if true;
+      // The user document holds PRIVATE data (email, phone, notification
+      // preferences, favorites, lastSeen). Only the account owner and admins
+      // may read it — public profile pages are served by the Admin SDK with an
+      // explicit projection of public-safe fields (lib/firebase/admin.ts).
+      allow read: if isAuth() && (request.auth.uid == uid || isAdmin());
       // New accounts are always plain, unbanned, unverified users.
       allow create: if isAuth() && request.auth.uid == uid
         && request.resource.data.role == 'user'
@@ -77,12 +81,21 @@ service cloud.firestore {
         // Authors may edit/delete their review (rating/comment) but not its
         // moderation flags, identity, timestamps or the owner's reply —
         // otherwise an author could forge a "business owner response" or
-        // impersonate someone else.
+        // impersonate someone else. The BUSINESS owner may write ONLY the
+        // reply fields (never the customer's rating/comment/flags).
         allow update: if isAdmin()
           || (isOwner(resource)
               && notBanned()
               && keepsLocked(['userId', 'businessId', 'isVerified', 'isHidden', 'reportCount',
-                              'ownerReply', 'ownerRepliedAt', 'userName', 'userPhoto', 'createdAt'].toSet()));
+                              'ownerReply', 'ownerRepliedAt', 'userName', 'userPhoto', 'createdAt'].toSet()))
+          || (isAuth()
+              && notBanned()
+              && get(/databases/$(database)/documents/businesses/$(bid)).data.ownerId == request.auth.uid
+              && request.resource.data.diff(resource.data).affectedKeys()
+                   .hasOnly(['ownerReply', 'ownerRepliedAt'])
+              && request.resource.data.ownerReply is string
+              && request.resource.data.ownerReply.size() >= 1
+              && request.resource.data.ownerReply.size() <= 1000);
         allow delete: if isOwner(resource) || isAdmin();
       }
     }
@@ -124,10 +137,13 @@ service cloud.firestore {
     }
 
     // Public contact form (no sign-in required). Write-only for visitors,
-    // readable/managed only by admins. Sizes are capped to limit abuse.
+    // readable/managed only by admins. Sizes are capped and the document shape
+    // is locked (no junk fields, always born as 'new') to limit abuse.
     match /contactMessages/{mid} {
       allow read, update, delete: if isAdmin();
-      allow create: if request.resource.data.name is string && request.resource.data.name.size() >= 2 && request.resource.data.name.size() <= 100
+      allow create: if request.resource.data.keys().hasOnly(['name', 'email', 'message', 'status', 'createdAt'])
+        && request.resource.data.status == 'new'
+        && request.resource.data.name is string && request.resource.data.name.size() >= 2 && request.resource.data.name.size() <= 100
         && request.resource.data.email is string && request.resource.data.email.size() >= 5 && request.resource.data.email.size() <= 200
         && request.resource.data.message is string && request.resource.data.message.size() >= 10 && request.resource.data.message.size() <= 2000;
     }
