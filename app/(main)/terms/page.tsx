@@ -3,6 +3,7 @@ import type { Metadata } from 'next'
 export const metadata: Metadata = {
   title: 'Términos de uso',
   description: 'Términos y condiciones de uso de la plataforma KRUZO.',
+  alternates: { canonical: '/terms' },
 }
 
 export default function TermsPage() {

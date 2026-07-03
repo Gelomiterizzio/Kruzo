@@ -5,6 +5,7 @@ import { ContactForm } from '@/components/contact/ContactForm'
 export const metadata: Metadata = {
   title: 'Contacto',
   description: 'Contáctanos para soporte, alianzas o información sobre KRUZO.',
+  alternates: { canonical: '/contact' },
 }
 
 export default function ContactPage() {

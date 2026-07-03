@@ -4,6 +4,7 @@ import { MapPin, Target, Zap, Heart } from 'lucide-react'
 export const metadata: Metadata = {
   title: 'Nosotros',
   description: 'Conoce la historia y misión de KRUZO, la plataforma comercial local de Santa Cruz de la Sierra.',
+  alternates: { canonical: '/about' },
 }
 
 export default function AboutPage() {

@@ -182,6 +182,18 @@ export async function createReview(
   })
 }
 
+/**
+ * Business owner's public reply to a review. The Firestore rules only allow
+ * the business owner (or an admin) to touch exactly these two fields, so the
+ * customer's rating/comment can never be altered through this path.
+ */
+export async function replyToReview(businessId: string, reviewId: string, reply: string) {
+  await updateDoc(doc(db, 'businesses', businessId, 'reviews', reviewId), {
+    ownerReply: reply.trim(),
+    ownerRepliedAt: serverTimestamp(),
+  })
+}
+
 // ─── SEARCH ─────────────────────────────────────────────────────────────────
 // Firestore has no full-text search, so /search fetches one capped batch with
 // the already-indexed filters and matches/sorts client-side. Accent- and
@@ -213,7 +225,7 @@ export async function searchBusinesses(opts: {
   if (category) constraints.push(where('category', 'array-contains', category))
   if (zone) constraints.push(where('zone', '==', zone))
 
-  const snap = await getDocs(query(collection(db, 'businesses'), ...constraints))
+  const snap = await withTimeout(getDocs(query(collection(db, 'businesses'), ...constraints)), READ_TIMEOUT_MS, 'searchBusinesses')
   let results = snap.docs.map(d => ({ id: d.id, ...d.data() } as Business))
 
   if (q?.trim()) {

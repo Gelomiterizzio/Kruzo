@@ -8,6 +8,9 @@ const inputCls = 'w-full px-3 py-2.5 text-sm bg-muted border border-border round
 
 export function ContactForm() {
   const [form, setForm] = useState({ name: '', email: '', message: '' })
+  // Honeypot: invisible to humans, filled by naive spam bots. When it has a
+  // value we short-circuit to the success state without writing anything.
+  const [website, setWebsite] = useState('')
   const [sending, setSending] = useState(false)
   const [sent, setSent] = useState(false)
 
@@ -16,6 +19,7 @@ export function ContactForm() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (website.trim()) { setSent(true); return }
     if (form.name.trim().length < 2) { toast.error('Ingresa tu nombre'); return }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) { toast.error('Ingresa un email válido'); return }
     if (form.message.trim().length < 10) { toast.error('Cuéntanos un poco más (mínimo 10 caracteres)'); return }
@@ -50,6 +54,12 @@ export function ContactForm() {
   return (
     <form onSubmit={submit} className="p-6 bg-card border border-border rounded-2xl space-y-4">
       <h2 className="font-semibold">Envíanos un mensaje</h2>
+      {/* Honeypot — hidden from real users (and from assistive tech). */}
+      <div aria-hidden="true" className="absolute w-px h-px overflow-hidden opacity-0 pointer-events-none">
+        <label htmlFor="contact-website">No completes este campo</label>
+        <input id="contact-website" type="text" tabIndex={-1} autoComplete="off"
+          value={website} onChange={e => setWebsite(e.target.value)} />
+      </div>
       <div>
         <label htmlFor="contact-name" className="sr-only">Nombre</label>
         <input id="contact-name" value={form.name} onChange={set('name')} placeholder="Tu nombre" maxLength={100} className={inputCls} />

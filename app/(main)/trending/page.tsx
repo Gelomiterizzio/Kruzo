@@ -10,6 +10,7 @@ import { AdBannerFooter } from '@/components/ads/AdBannerFooter'
 export const metadata: Metadata = {
   title: 'Tendencias',
   description: 'Los negocios destacados y los productos más vistos de Santa Cruz.',
+  alternates: { canonical: '/trending' },
 }
 
 export default function TrendingPage() {

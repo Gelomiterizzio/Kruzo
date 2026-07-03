@@ -9,6 +9,7 @@ import { getPublicStats } from '@/lib/firebase/admin'
 export const metadata: Metadata = {
   title: { absolute: 'KRUZO — Tu Ciudad. Tu Mercado.' },
   description: 'Descubre negocios, emprendimientos y servicios de Santa Cruz de la Sierra, Bolivia. Conecta directamente por WhatsApp.',
+  alternates: { canonical: '/' },
 }
 
 // Refresh the real platform counts hourly without a redeploy.

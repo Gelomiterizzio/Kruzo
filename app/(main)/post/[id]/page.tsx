@@ -3,12 +3,15 @@ import { notFound } from 'next/navigation'
 import { headers } from 'next/headers'
 import { doc, getDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase/config'
+import { getBusinessBySlug } from '@/lib/firebase/firestore'
 import { incrementPostView } from '@/lib/firebase/admin'
 import type { Post } from '@/lib/types/post'
 import Image from 'next/image'
 import Link from 'next/link'
 import { WhatsAppButton } from '@/components/shared/WhatsAppButton'
 import { AdBannerInline } from '@/components/ads/AdBannerInline'
+import { JsonLd } from '@/components/seo/JsonLd'
+import { productSchema } from '@/lib/seo/schema'
 import { formatPrice, formatRelativeTime } from '@/lib/utils/formatters'
 import { ArrowLeft, Tag, Truck } from 'lucide-react'
 
@@ -20,10 +23,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const snap = await getDoc(doc(db, 'posts', id))
   if (!snap.exists()) return { title: 'Publicación no encontrada' }
   const post = snap.data() as Post
+  if (post.status === 'deleted' || post.status === 'paused') return { title: 'Publicación no encontrada' }
   return {
     title: post.title,
     description: post.description,
-    openGraph: { images: post.images[0] ? [post.images[0]] : [] },
+    alternates: { canonical: `/post/${id}` },
+    openGraph: {
+      title: post.title,
+      description: post.description,
+      url: `/post/${id}`,
+      images: post.images[0] ? [post.images[0]] : [],
+    },
   }
 }
 
@@ -34,6 +44,12 @@ export default async function PostPage({ params }: Props) {
   const post = { id: snap.id, ...snap.data() } as Post
   if (post.status === 'deleted' || post.status === 'paused') notFound()
 
+  // The contact number is read from the business doc at render time (with the
+  // denormalized copy as fallback), so posts never point to a stale WhatsApp
+  // after the owner updates their business contact info.
+  const business = await getBusinessBySlug(post.businessSlug).catch(() => null)
+  const whatsapp = business?.whatsapp || post.whatsapp
+
   // Real per-post views (skipped for link prefetches to keep stats honest).
   const h = await headers()
   if (h.get('next-router-prefetch') === null) {
@@ -42,6 +58,7 @@ export default async function PostPage({ params }: Props) {
 
   return (
     <div className="container max-w-3xl pt-20 pb-16 space-y-6">
+      <JsonLd data={productSchema(post)} />
       <Link
         href={`/business/${post.businessSlug}`}
         className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
@@ -127,7 +144,7 @@ export default async function PostPage({ params }: Props) {
         </div>
 
         <WhatsAppButton
-          phone={post.whatsapp}
+          phone={whatsapp}
           businessName={post.businessName}
           postTitle={post.title}
           price={post.price}

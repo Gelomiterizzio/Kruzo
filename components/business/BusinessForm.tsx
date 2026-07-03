@@ -20,9 +20,9 @@ interface Props { existing?: Business }
 
 // Hoisted out of the component: defining it inline gives it a new identity on
 // every render, which remounts the subtree and makes inputs drop focus.
-const Field = ({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) => (
+const Field = ({ label, error, htmlFor, children }: { label: string; error?: string; htmlFor?: string; children: React.ReactNode }) => (
   <div>
-    <label className="block text-sm font-medium mb-1.5">{label}</label>
+    <label htmlFor={htmlFor} className="block text-sm font-medium mb-1.5">{label}</label>
     {children}
     {error && <p className="text-xs text-destructive mt-1">{error}</p>}
   </div>
@@ -111,14 +111,14 @@ export function BusinessForm({ existing }: Props) {
       {/* Información básica */}
       <div className="p-5 bg-card border border-border rounded-2xl space-y-4">
         <h2 className="font-semibold">Información básica</h2>
-        <Field label="Nombre del negocio *" error={errors.name?.message}>
-          <input {...register('name')} placeholder="Ej: Pastelería Mamá Lucía" className={inputCls} />
+        <Field label="Nombre del negocio *" htmlFor="biz-name" error={errors.name?.message}>
+          <input id="biz-name" {...register('name')} placeholder="Ej: Pastelería Mamá Lucía" className={inputCls} />
         </Field>
-        <Field label="Descripción corta / Slogan" error={errors.tagline?.message}>
-          <input {...register('tagline')} placeholder="Ej: Los mejores pasteles de la ciudad" className={inputCls} />
+        <Field label="Descripción corta / Slogan" htmlFor="biz-tagline" error={errors.tagline?.message}>
+          <input id="biz-tagline" {...register('tagline')} placeholder="Ej: Los mejores pasteles de la ciudad" className={inputCls} />
         </Field>
-        <Field label="Descripción completa *" error={errors.description?.message}>
-          <textarea {...register('description')} rows={4} placeholder="Describe tu negocio, qué ofreces, tu historia…" className={`${inputCls} resize-none`} />
+        <Field label="Descripción completa *" htmlFor="biz-description" error={errors.description?.message}>
+          <textarea id="biz-description" {...register('description')} rows={4} placeholder="Describe tu negocio, qué ofreces, tu historia…" className={`${inputCls} resize-none`} />
         </Field>
       </div>
 
@@ -134,8 +134,8 @@ export function BusinessForm({ existing }: Props) {
             </button>
           ))}
         </div>
-        <Field label="Etiquetas (separadas por coma)" error={errors.tags?.message}>
-          <input {...register('tags')} placeholder="Ej: delivery, tortas personalizadas, pedido anticipado" className={inputCls} />
+        <Field label="Etiquetas (separadas por coma)" htmlFor="biz-tags" error={errors.tags?.message}>
+          <input id="biz-tags" {...register('tags')} placeholder="Ej: delivery, tortas personalizadas, pedido anticipado" className={inputCls} />
         </Field>
       </div>
 
@@ -143,26 +143,26 @@ export function BusinessForm({ existing }: Props) {
       <div className="p-5 bg-card border border-border rounded-2xl space-y-4">
         <h2 className="font-semibold">Contacto</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field label="WhatsApp * (número boliviano)" error={errors.whatsapp?.message}>
+          <Field label="WhatsApp * (número boliviano)" htmlFor="biz-whatsapp" error={errors.whatsapp?.message}>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">+591</span>
-              <input {...register('whatsapp')} placeholder="70000000" className={`${inputCls} pl-12`} />
+              <input id="biz-whatsapp" {...register('whatsapp')} placeholder="70000000" className={`${inputCls} pl-12`} />
             </div>
           </Field>
-          <Field label="Teléfono" error={errors.phone?.message}>
-            <input {...register('phone')} placeholder="33000000" className={inputCls} />
+          <Field label="Teléfono" htmlFor="biz-phone" error={errors.phone?.message}>
+            <input id="biz-phone" {...register('phone')} placeholder="33000000" className={inputCls} />
           </Field>
-          <Field label="Email" error={errors.email?.message}>
-            <input {...register('email')} type="email" placeholder="negocio@email.com" className={inputCls} />
+          <Field label="Email" htmlFor="biz-email" error={errors.email?.message}>
+            <input id="biz-email" {...register('email')} type="email" placeholder="negocio@email.com" className={inputCls} />
           </Field>
-          <Field label="Instagram (@usuario)" error={errors.instagram?.message}>
-            <input {...register('instagram')} placeholder="mi_negocio" className={inputCls} />
+          <Field label="Instagram (@usuario)" htmlFor="biz-instagram" error={errors.instagram?.message}>
+            <input id="biz-instagram" {...register('instagram')} placeholder="mi_negocio" className={inputCls} />
           </Field>
-          <Field label="Facebook" error={errors.facebook?.message}>
-            <input {...register('facebook')} placeholder="Nombre en Facebook" className={inputCls} />
+          <Field label="Facebook" htmlFor="biz-facebook" error={errors.facebook?.message}>
+            <input id="biz-facebook" {...register('facebook')} placeholder="Nombre en Facebook" className={inputCls} />
           </Field>
-          <Field label="Sitio web" error={errors.website?.message}>
-            <input {...register('website')} placeholder="https://minegocio.com" className={inputCls} />
+          <Field label="Sitio web" htmlFor="biz-website" error={errors.website?.message}>
+            <input id="biz-website" {...register('website')} placeholder="https://minegocio.com" className={inputCls} />
           </Field>
         </div>
       </div>
@@ -171,14 +171,14 @@ export function BusinessForm({ existing }: Props) {
       <div className="p-5 bg-card border border-border rounded-2xl space-y-4">
         <h2 className="font-semibold flex items-center gap-2"><MapPin size={16} /> Ubicación</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field label="Zona *" error={errors.zone?.message}>
-            <select {...register('zone')} className={inputCls}>
+          <Field label="Zona *" htmlFor="biz-zone" error={errors.zone?.message}>
+            <select id="biz-zone" {...register('zone')} className={inputCls}>
               <option value="">Seleccionar zona…</option>
               {SCZ_ZONES.map(z => <option key={z} value={z}>{z}</option>)}
             </select>
           </Field>
-          <Field label="Dirección *" error={errors.address?.message}>
-            <input {...register('address')} placeholder="Av. Roca y Coronado #123" className={inputCls} />
+          <Field label="Dirección *" htmlFor="biz-address" error={errors.address?.message}>
+            <input id="biz-address" {...register('address')} placeholder="Av. Roca y Coronado #123" className={inputCls} />
           </Field>
         </div>
       </div>

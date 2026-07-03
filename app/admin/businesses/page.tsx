@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
+import Image from 'next/image'
 import { collection, query, orderBy, limit, getDocs, doc, updateDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase/config'
 import type { Business } from '@/lib/types/business'
@@ -87,7 +88,7 @@ export default function AdminBusinessesPage() {
             const cfg = STATUS_CFG[b.status] ?? STATUS_CFG.pending
             return (
               <div key={b.id} className="flex items-center gap-3 p-3 bg-card border border-border rounded-2xl hover:shadow-sm transition-all">
-                {b.logo ? <img src={b.logo} alt="" className="w-10 h-10 rounded-xl object-cover shrink-0" />
+                {b.logo ? <Image src={b.logo} alt="" width={40} height={40} className="w-10 h-10 rounded-xl object-cover shrink-0" />
                   : <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center shrink-0 text-xl">🏪</div>}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">

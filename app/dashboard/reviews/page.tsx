@@ -18,7 +18,7 @@ export default function DashboardReviewsPage() {
     enabled: !!businessId,
   })
 
-  const { reviews, loading, hasMore, loadMore } = useReviews(business?.id ?? '')
+  const { reviews, loading, hasMore, loadMore, refetch } = useReviews(business?.id ?? '')
 
   return (
     <div className="space-y-5">
@@ -58,7 +58,9 @@ export default function DashboardReviewsPage() {
             <p className="text-center text-muted-foreground py-10">Aún no tienes reseñas</p>
           ) : (
             <div className="space-y-3">
-              {reviews.map((r, i) => <ReviewCard key={r.id} review={r} index={i} />)}
+              {reviews.map((r, i) => (
+                <ReviewCard key={r.id} review={r} index={i} canReply onReplied={() => refetch()} />
+              ))}
               {hasMore && (
                 <button onClick={loadMore} className="w-full py-2.5 text-sm border border-border rounded-xl hover:bg-accent transition-colors">
                   Cargar más reseñas

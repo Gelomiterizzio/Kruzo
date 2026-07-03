@@ -19,14 +19,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }))
 
   let businessEntries: MetadataRoute.Sitemap = []
+  let postEntries: MetadataRoute.Sitemap = []
   try {
-    const snap = await adminDb()
-      .collection('businesses')
-      .where('status', '==', 'active')
-      .select('slug', 'updatedAt')
-      .get()
+    const db = adminDb()
+    const [bizSnap, postSnap] = await Promise.all([
+      db.collection('businesses')
+        .where('status', '==', 'active')
+        .select('slug', 'updatedAt')
+        .get(),
+      db.collection('posts')
+        .where('status', '==', 'active')
+        .select('updatedAt')
+        .limit(5000)
+        .get(),
+    ])
 
-    businessEntries = snap.docs
+    businessEntries = bizSnap.docs
       .map((d) => d.data() as { slug?: string; updatedAt?: { toDate?: () => Date } })
       .filter((b) => !!b.slug)
       .map((b) => ({
@@ -35,9 +43,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         changeFrequency: 'weekly',
         priority: 0.8,
       }))
+
+    postEntries = postSnap.docs.map((d) => {
+      const p = d.data() as { updatedAt?: { toDate?: () => Date } }
+      return {
+        url: `${BASE}/post/${d.id}`,
+        lastModified: p.updatedAt?.toDate?.() ?? now,
+        changeFrequency: 'weekly' as const,
+        priority: 0.6,
+      }
+    })
   } catch {
     // Firebase Admin not configured (e.g. CI build) — ship the static sitemap.
   }
 
-  return [...staticEntries, ...businessEntries]
+  return [...staticEntries, ...businessEntries, ...postEntries]
 }
